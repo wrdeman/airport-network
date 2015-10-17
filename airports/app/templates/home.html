@@ -4,17 +4,42 @@
     <meta charset="utf-8">
     <title></title>
     <meta name="description" content="">
-  </head>
-  <body>
-    <div id="container"></div>
+
     <script src="{{url_for('static', filename='jquery/dist/jquery.js')}}"></script>
     <script src="{{url_for('static', filename='underscore/underscore.js')}}"></script>
     <script src="{{url_for('static', filename='backbone/backbone.js')}}"></script>
-    <script src="{{url_for('static', filename='movies/movies.js')}}"></script>
-    <script type="text/javascript">
-      $(document).ready(function(){
-        var appView = new AppView();
-      });
-    </script>
+
+    <script src="http://vega.github.io/vega-editor/vendor/topojson.js" charset="utf-8"></script>
+    <script src="http://vega.github.io/vega-editor/vendor/d3.min.js" charset="utf-8"></script>
+    <script src="http://vega.github.io/vega-editor/vendor/d3.geo.projection.min.js" charset="utf-8"></script>
+    <script src="http://vega.github.io/vega-editor/vendor/d3.layout.cloud.js" charset="utf-8"></script>
+    <script src="http://vega.github.io/vega-editor/vendor/vega.js" charset="utf-8"></script>
+    <script src="http://vega.github.io/vega-editor/vendor/vega-embed.js" charset="utf-8"></script>
+
+    <script src="{{url_for('static', filename='airports/airports.js')}}"></script>
+
+  <script type="text/javascript">
+    $(document).ready(function(){
+      var appView = new AppView();
+    });
+  </script>
+
+
+  </head>
+  <body>
+    <div id="container"></div>
+    <br>
+    <br>
+    <div id="vis"></div>
   </body>
+
+
+  <script type="text/javascript">
+      vg.embed('#vis', url="{{url_for('map')}}", function(view, vega_spec) {
+      // Callback receiving the View instance and parsed Vega spec...
+      // The View resides under the '#vis' element
+      });
+  </script>
+
+
 </html>

@@ -17,3 +17,4 @@ airports/scripts/bower_components/
 .coverage
 target
 reports/
+trac/

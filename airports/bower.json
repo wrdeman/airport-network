@@ -15,5 +15,7 @@
     "backbone": "~1.2.3",
     "jquery": "~2.1.4",
     "underscore": "~1.8.3",
+    "vega": "~2.2.6",
+    "vega-embed": "~1.0.9"
   }
 }

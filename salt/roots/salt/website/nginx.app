@@ -11,10 +11,9 @@ server{
     proxy_read_timeout 10;
 
     location /static/ {
-      alias /home/vagrant/app/movies/static/;
+      alias /home/vagrant/app/scripts/bower_components/;
       expires 1d;
     }
-
 
     proxy_pass http://127.0.0.1:8000/;
   }

@@ -4,4 +4,3 @@ base:
   - python
   - venvwrapper
   - website
-  - neo4j
