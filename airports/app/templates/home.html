@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title></title>
+    <meta name="description" content="">
+  </head>
+  <body>
+    <div id="container"></div>
+    <script src="{{url_for('static', filename='jquery/dist/jquery.js')}}"></script>
+    <script src="{{url_for('static', filename='underscore/underscore.js')}}"></script>
+    <script src="{{url_for('static', filename='backbone/backbone.js')}}"></script>
+    <script src="{{url_for('static', filename='movies/movies.js')}}"></script>
+    <script type="text/javascript">
+      $(document).ready(function(){
+        var appView = new AppView();
+      });
+    </script>
+  </body>
+</html>

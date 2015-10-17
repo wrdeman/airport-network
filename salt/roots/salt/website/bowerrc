@@ -1,0 +1,3 @@
+{
+  "directory": "{{ salt['pillar.get']('bower_dir', '') }}"
+}

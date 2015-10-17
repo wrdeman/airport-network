@@ -1,0 +1,19 @@
+{
+  "name": "movies",
+  "version": "0.0.0",
+  "description": "Backbone app for airports",
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "scripts/bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "backbone": "~1.2.3",
+    "jquery": "~2.1.4",
+    "underscore": "~1.8.3",
+  }
+}
