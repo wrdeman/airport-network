@@ -3,10 +3,10 @@ from operator import itemgetter
 
 from flask import jsonify, render_template, request, Response
 import networkx as nx
+import numpy as np
 
 from app import app, vega
 from app.graph import Graph
-
 
 gr = Graph()
 
@@ -20,11 +20,10 @@ def sort_degrees(V, limit=None):
     return V
 
 
-@app.route('/')
-@app.route('/index')
-def index():
-    _, v = gr.vulnerability(limit=5)
-
+def get_current_airports():
+    """ get a list of airports for drop down boxes based on the current
+    graph
+    """
     filtered_airports = [
         airport
         for airport in gr.airport_data.values()
@@ -34,6 +33,16 @@ def index():
     airport_list = OrderedDict()
     for airport in sorted(filtered_airports, key=itemgetter('code')):
         airport_list[airport['code']] = airport['name']
+
+    return airport_list
+
+
+@app.route('/')
+@app.route('/index')
+def index():
+    _, v = gr.vulnerability(limit=5)
+
+    airport_list = get_current_airports()
 
     return render_template(
         'home.html',
@@ -48,11 +57,32 @@ def index():
     )
 
 
+@app.route('/route')
+def route():
+    airport_list = get_current_airports()
+    return render_template(
+        'route.html',
+        airports=airport_list,
+    )
+
+
+# vega views
 @app.route('/map')
-def map():
-    return jsonify(**vega.BareMap().get_json())
+@app.route('/map/<departure_code>/<destination_code>')
+def map(departure_code=None, destination_code=None):
+    return jsonify(
+        **vega.BareMap().get_json(
+            **{'src': departure_code, 'dst':destination_code}
+        )
+    )
 
 
+@app.route('/histogram')
+def histogram():
+    return jsonify(**vega.Histogram().get_json())
+
+
+# APIs
 @app.route('/airports', methods=['GET', 'POST'])
 @app.route('/airports/<airport_code>', methods=['GET', 'DELETE'])
 def airports(airport_code=None):
@@ -137,3 +167,23 @@ def flights(departure_code=None, destination_code=None):
                 'count': edge[2]['weight']
             })
         return jsonify(flight_data=data)
+
+
+@app.route('/degree')
+def degree():
+    degree_sequence = sorted(
+        nx.degree(gr.graph).values(), reverse=True
+    )
+    mx = max(degree_sequence)
+    num_bins = 10
+    width = (mx % num_bins)
+    bins = [i*width for i in range(num_bins)]
+    hist, bins = np.histogram(degree_sequence, bins=bins)
+
+    data = [
+        {'category': 'A'+str(i[0]),
+         'amount': i[1]}
+        for i in zip(bins, hist)
+    ]
+
+    return jsonify(histogram=data)

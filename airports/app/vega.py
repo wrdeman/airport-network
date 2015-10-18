@@ -3,31 +3,25 @@ from collections import OrderedDict
 from flask import url_for
 
 
-class BaseAirMaps(object):
+class BaseAirPlot(object):
     width = 900
     height = 560
     padding = {"top": 25, "left": 0, "right": 0, "bottom": 0}
 
-    def get_json(self):
+    def get_json(self, **kwargs):
         spec = OrderedDict()
 
         spec['width'] = self.width
         spec['height'] = self.height
         spec['padding'] = self.padding
 
-        spec['data'] = self.get_data()
+        spec['data'] = self.get_data(**kwargs)
         spec['scales'] = self.get_scales()
         spec['signals'] = self.get_signals()
         spec['marks'] = self.get_marks()
+        spec['axes'] = self.get_axes()
 
         response = OrderedDict({
-            "parameters": [
-                {
-                    "signal": "rotate", "type": "range",
-                    "value": 0, "min": -360, "max": 360,
-                    "rewrite": ["data[0].transform[0].rotate"]
-                }
-            ],
             "spec": spec
         })
 
@@ -45,9 +39,96 @@ class BaseAirMaps(object):
     def get_marks(self):
         return []
 
+    def get_axes(self):
+        return []
 
-class BareMap(BaseAirMaps):
-    def get_data(self):
+
+class Histogram(BaseAirPlot):
+    width = 450
+    height = 280
+
+    def get_data(self, **kwargs):
+        return [
+            {
+                "name": "degrees",
+                "url": url_for("degree"),
+                "format": {
+                    "type": "json",
+                    "parse": "auto",
+                    "property": "histogram"
+                }
+            }
+        ]
+
+    def get_scales(self):
+        return [
+            {
+                "name": "xscale",
+                "type": "ordinal",
+                "range": "width",
+                "domain": {
+                    "data": "degrees",
+                    "field": "category"
+                }
+            },
+            {
+                "name": "yscale",
+                "range": "height",
+                "nice": True,
+                "domain": {
+                    "data": "degrees",
+                    "field": "amount"
+                }
+            }
+        ]
+
+    def get_axes(self):
+        return [
+            {"type": "x", "scale": "xscale"},
+            {"type": "y", "scale": "yscale"}
+        ]
+
+    def get_marks(self):
+        return [
+            {
+                "type": "rect",
+                "from": {"data": "degrees"},
+                "properties": {
+                    "enter": {
+                        "x": {
+                            "scale": "xscale",
+                            "field": "category"
+                        },
+                        "width": {
+                            "scale": "xscale",
+                            "band": True,
+                            "offset": -1
+                        },
+                        "y": {
+                            "scale": "yscale",
+                            "field": "amount"
+                        },
+                        "y2": {
+                            "scale": "yscale",
+                            "value": 0
+                        }
+                    },
+                    "update": {"fill": {"value": "steelblue"}},
+                    "hover": {"fill": {"value": "red"}}
+                }
+            }
+        ]
+
+
+class BareMap(BaseAirPlot):
+    def get_data(self, **kwargs):
+        src = kwargs['src']
+        dst = kwargs['dst']
+
+        flight_url = url_for("flights")
+        routes_url = flight_url
+        if src and dst:
+            routes_url = flight_url + '/' + src + '/' + dst
         return [
             {
                 "name": "states",
@@ -62,7 +143,7 @@ class BareMap(BaseAirMaps):
             },
             {
                 "name": "traffic",
-                "url": url_for("flights"),
+                "url": flight_url,
                 "format": {
                     "type": "json",
                     "parse": "auto",
@@ -112,7 +193,7 @@ class BareMap(BaseAirMaps):
             },
             {
                 "name": "routes",
-                "url": url_for("flights"),  # +"/ABQ/JAC",
+                "url": routes_url,
                 "format": {
                     "type": "json",
                     "parse": "auto",

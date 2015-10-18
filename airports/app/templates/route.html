@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title></title>
+    <meta name="description" content="">
+
+    <link href="{{url_for('static', filename='select2/dist/css/select2.min.css')}}" rel="stylesheet" type="text/css" />
+    <link href="{{url_for('static', filename='airports/airports.css')}}" rel="stylesheet" type="text/css" />
+
+    <script src="{{url_for('static', filename='jquery/dist/jquery.min.js')}}"></script>
+    <script src="{{url_for('static', filename='underscore/underscore.js')}}"></script>
+    <script src="{{url_for('static', filename='backbone/backbone.js')}}"></script>
+    <script src="{{url_for('static', filename='select2/dist/js/select2.min.js')}}"></script>
+
+    <script src="http://vega.github.io/vega-editor/vendor/topojson.js" charset="utf-8"></script>
+    <script src="http://vega.github.io/vega-editor/vendor/d3.min.js" charset="utf-8"></script>
+    <script src="http://vega.github.io/vega-editor/vendor/d3.geo.projection.min.js" charset="utf-8"></script>
+    <script src="http://vega.github.io/vega-editor/vendor/d3.layout.cloud.js" charset="utf-8"></script>
+    <script src="http://vega.github.io/vega-editor/vendor/vega.js" charset="utf-8"></script>
+    <script src="http://vega.github.io/vega-editor/vendor/vega-embed.js" charset="utf-8"></script>
+
+    <script src="{{url_for('static', filename='airports/airports.js')}}"></script>
+
+  <script type="text/javascript">
+    $(document).ready(function(){
+
+    // var appView = new AppView();
+    var src;
+    var dst;
+
+    var refresh_map = function(a, b){
+    var url="{{url_for('map')}}";
+    if (a && b){
+    url = url+'/'+a+'/'+b;
+    }
+    vg.embed('#vis', url=url, function(view, vega_spec) {
+    });
+    };
+    refresh_map(null, null);
+
+    var update_route = function(a, b){
+      refresh_map(a, b);
+    };
+
+    $("#src_airport").select2();
+    $("#src_airport").on("change", function (e) {
+       src = $(this).val()
+       if (src && dst){
+         update_route(src, dst);
+       };
+    });
+
+    $("#dst_airport").select2();
+    $("#dst_airport").on("change", function (e) {
+    dst = $(this).val()
+    if (src && dst){
+      update_route(src, dst);
+    }
+    });
+
+    });
+  </script>
+
+
+  </head>
+  <body>
+    <div id="container"></div>
+    <br>
+    <br>
+    <div id="vis"></div>
+
+    <select id="dst_airport">
+      {% for code, name in airports.iteritems() %}
+      <option value="{{code}}">{{code}} ({{name}})</option>
+      {% endfor %}
+    </select>
+
+    <select id="src_airport">
+      {% for code, name in airports.iteritems() %}
+      <option value="{{code}}">{{code}} ({{name}})</option>
+      {% endfor %}
+    </select>
+
+
+  </body>
+
+
+
+  <!-- <script type="text/javascript"> -->
+  <!--     vg.embed('#vis', url="{{url_for('map')}}", function(view, vega_spec) { -->
+  <!--     }); -->
+  <!-- </script> -->
+
+
+</html>
