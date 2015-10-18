@@ -5,9 +5,13 @@
     <title></title>
     <meta name="description" content="">
 
-    <script src="{{url_for('static', filename='jquery/dist/jquery.js')}}"></script>
+    <link href="{{url_for('static', filename='select2/dist/css/select2.min.css')}}" rel="stylesheet" type="text/css" />
+    <link href="{{url_for('static', filename='airports/airports.css')}}" rel="stylesheet" type="text/css" />
+    <!-- <script src="https://code.jquery.com/jquery-1.9.1.min.js"></script> -->
+    <script src="{{url_for('static', filename='jquery/dist/jquery.min.js')}}"></script>
     <script src="{{url_for('static', filename='underscore/underscore.js')}}"></script>
     <script src="{{url_for('static', filename='backbone/backbone.js')}}"></script>
+    <script src="{{url_for('static', filename='select2/dist/js/select2.min.js')}}"></script>
 
     <script src="http://vega.github.io/vega-editor/vendor/topojson.js" charset="utf-8"></script>
     <script src="http://vega.github.io/vega-editor/vendor/d3.min.js" charset="utf-8"></script>
@@ -20,7 +24,30 @@
 
   <script type="text/javascript">
     $(document).ready(function(){
-      var appView = new AppView();
+    // var appView = new AppView();
+
+
+    $("#delete_airport").select2();
+
+    $("#delete_airport").on("change", function (e) {
+    $.ajax({
+      method: "DELETE",
+      url: "{{url_for('airports')}}"+"/"+$(this).val(),
+    }).done(function() {
+      location.reload();
+    });
+
+    });
+
+    $("#restore_airports").on("click", function(e){
+    $.ajax({
+      method: "POST",
+      url: "{{url_for('airports')}}",
+    }).done(function() {
+      location.reload();
+    });
+    });
+
     });
   </script>
 
@@ -31,11 +58,67 @@
     <br>
     <br>
     <div id="vis"></div>
+
+    <select id="delete_airport">
+      {% for code, name in airports.iteritems() %}
+      <option value="{{code}}">{{code}} ({{name}})</option>
+      {% endfor %}
+    </select>
+
+     <button id="restore_airports" type="button">Restore</button>
+    <table id="tab_degree">
+      <thead>
+	<tr>
+	  <td>Code</td><td>Degree Centrality</td>
+	</tr>
+      </thead>
+      <tbody>
+	{% for code, deg in degrees.iteritems() %}
+	<tr>
+	  <td>{{code}}</td><td>{{deg}}</td>
+	</tr>
+	{% endfor %}
+      </tbody>
+    </table>
+
+    <table id="tab_eigen">
+      <thead>
+	<tr>
+	  <td>Code</td><td>Eigenvector Centrality</td>
+	</tr>
+      </thead>
+      <tbody>
+	{% for code, deg in eigens.iteritems() %}
+	<tr>
+	  <td>{{code}}</td><td>{{deg}}</td>
+	</tr>
+	{% endfor %}
+      </tbody>
+    </table>
+
+    <table id="tab_vulner">
+      <thead>
+	<tr>
+	  <td>Code</td><td>Vulnerability</td>
+	</tr>
+      </thead>
+      <tbody>
+	{% for code, deg in vulnerability.iteritems() %}
+	<tr>
+	  <td>{{code}}</td><td>{{deg}}</td>
+	</tr>
+	{% endfor %}
+      </tbody>
+    </table>
+
+
   </body>
+
 
 
   <script type="text/javascript">
       vg.embed('#vis', url="{{url_for('map')}}", function(view, vega_spec) {
+      $(".vega-params").hide();
       // Callback receiving the View instance and parsed Vega spec...
       // The View resides under the '#vis' element
       });
