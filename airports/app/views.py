@@ -3,7 +3,7 @@ from operator import itemgetter
 
 from flask import jsonify, render_template, request, Response
 import networkx as nx
-
+import numpy as np
 
 from app import app, vega
 from app.graph import Graph
@@ -169,8 +169,25 @@ def flights(departure_code=None, destination_code=None):
         return jsonify(flight_data=data)
 
 
-@app.route('/degree')
-def degree():
+@app.route('/degree/<plot_type>')
+def degree(plot_type=None):
     data = Counter(nx.degree(gr.graph).values())
-    data = [{"x": int(k), "y": int(v)} for k, v in data.iteritems()]
-    return jsonify(scatter_points=data)
+    if plot_type == 'scatter':
+        data = [
+            {"x": int(k), "y": int(v)}
+            for k, v in data.iteritems()
+        ]
+        return jsonify(scatter_points=data)
+    elif plot_type == 'powerlaw':
+        x, y = data.keys(), data.values()
+        x = np.array(x)
+        y = np.log(np.array(y))
+
+        grad, inter = np.polyfit(np.log(x), y, 1)
+        y = inter + (grad * np.log(x))
+
+        data = [
+            {"x": datum[0], "y": datum[1]}
+            for datum in zip(x, np.exp(y))
+        ]
+        return jsonify(bestfit=data)

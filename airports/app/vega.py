@@ -52,11 +52,20 @@ class Scatter(BaseAirPlot):
         return [
             {
                 "name": "points",
-                "url": url_for("degree"),
+                "url": url_for("degree", plot_type='scatter'),
                 "format": {
                     "type": "json",
                     "parse": "auto",
                     "property": "scatter_points"
+                },
+            },
+            {
+                "name": "bestfit",
+                "url": url_for("degree", plot_type='powerlaw'),
+                "format": {
+                    "type": "json",
+                    "parse": "auto",
+                    "property": "bestfit"
                 },
             }
         ]
@@ -112,6 +121,32 @@ class Scatter(BaseAirPlot):
                         "size": {"value": 300}
                     }
                 }
+            },
+            {
+                "type": "line",
+                "from": {"data": "bestfit"},
+                "properties": {
+                    "enter": {
+                        "x": {
+                            "scale": "x",
+                            "field": "x"
+                        },
+                        "y": {
+                            "scale": "y",
+                            "field": "y"
+                        },
+                        "stroke": {"value": "steelblue"},
+                        "fillOpacity": {"value": 0.5}
+                    },
+                    "update": {
+                        "fill": {"value": "transparent"},
+                        "size": {"value": 100}
+                    },
+                    "hover": {
+                        "fill": {"value": "pink"},
+                        "size": {"value": 300}
+                    }
+                }
             }
         ]
 
@@ -122,9 +157,14 @@ class BareMap(BaseAirPlot):
         dst = kwargs['dst']
 
         flight_url = url_for("flights")
+
         routes_url = flight_url
         if src and dst:
-            routes_url = flight_url + '/' + src + '/' + dst
+            routes_url = url_for(
+                "flights",
+                departure_code=src,
+                destination_code=dst
+            )
         return [
             {
                 "name": "states",
