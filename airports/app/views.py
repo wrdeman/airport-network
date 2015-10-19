@@ -1,9 +1,9 @@
-from collections import OrderedDict
+from collections import Counter, OrderedDict
 from operator import itemgetter
 
 from flask import jsonify, render_template, request, Response
 import networkx as nx
-import numpy as np
+
 
 from app import app, vega
 from app.graph import Graph
@@ -79,7 +79,7 @@ def map(departure_code=None, destination_code=None):
 
 @app.route('/histogram')
 def histogram():
-    return jsonify(**vega.Histogram().get_json())
+    return jsonify(**vega.Scatter().get_json())
 
 
 # APIs
@@ -171,19 +171,6 @@ def flights(departure_code=None, destination_code=None):
 
 @app.route('/degree')
 def degree():
-    degree_sequence = sorted(
-        nx.degree(gr.graph).values(), reverse=True
-    )
-    mx = max(degree_sequence)
-    num_bins = 10
-    width = (mx % num_bins)
-    bins = [i*width for i in range(num_bins)]
-    hist, bins = np.histogram(degree_sequence, bins=bins)
-
-    data = [
-        {'category': 'A'+str(i[0]),
-         'amount': i[1]}
-        for i in zip(bins, hist)
-    ]
-
-    return jsonify(histogram=data)
+    data = Counter(nx.degree(gr.graph).values())
+    data = [{"x": int(k), "y": int(v)} for k, v in data.iteritems()]
+    return jsonify(scatter_points=data)

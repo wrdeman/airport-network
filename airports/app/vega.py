@@ -43,78 +43,74 @@ class BaseAirPlot(object):
         return []
 
 
-class Histogram(BaseAirPlot):
-    width = 450
-    height = 280
+class Scatter(BaseAirPlot):
+    width = 600
+    height = 480
+    padding = {"top": 0, "left": 25, "right": 0, "bottom": 25}
 
     def get_data(self, **kwargs):
         return [
             {
-                "name": "degrees",
+                "name": "points",
                 "url": url_for("degree"),
                 "format": {
                     "type": "json",
                     "parse": "auto",
-                    "property": "histogram"
-                }
+                    "property": "scatter_points"
+                },
             }
         ]
 
     def get_scales(self):
         return [
             {
-                "name": "xscale",
-                "type": "ordinal",
+                "name": "x",
+                "nice": True,
+                "type": "log",
                 "range": "width",
-                "domain": {
-                    "data": "degrees",
-                    "field": "category"
-                }
+                "domain": {"data": "points", "field": "x"}
             },
             {
-                "name": "yscale",
-                "range": "height",
+                "name": "y",
                 "nice": True,
-                "domain": {
-                    "data": "degrees",
-                    "field": "amount"
-                }
+                "type": "log",
+                "range": "height",
+                "domain": {"data": "points", "field": "y"}
             }
         ]
 
     def get_axes(self):
         return [
-            {"type": "x", "scale": "xscale"},
-            {"type": "y", "scale": "yscale"}
+            {"type": "x", "scale": "x"},
+            {"type": "y", "scale": "y"}
         ]
 
     def get_marks(self):
         return [
             {
-                "type": "rect",
-                "from": {"data": "degrees"},
+                "type": "symbol",
+                "from": {"data": "points"},
                 "properties": {
                     "enter": {
                         "x": {
-                            "scale": "xscale",
-                            "field": "category"
-                        },
-                        "width": {
-                            "scale": "xscale",
-                            "band": True,
-                            "offset": -1
+                            "scale": "x",
+                            "field": "x"
                         },
                         "y": {
-                            "scale": "yscale",
-                            "field": "amount"
+                            "scale": "y",
+                            "field": "y"
                         },
-                        "y2": {
-                            "scale": "yscale",
-                            "value": 0
-                        }
+                        "stroke": {"value": "steelblue"},
+                        "fillOpacity": {"value": 0.5}
                     },
-                    "update": {"fill": {"value": "steelblue"}},
-                    "hover": {"fill": {"value": "red"}}
+                    "update": {
+                        "fill": {"value": "transparent"},
+                        "size": {"value": 100}
+                    },
+                    "hover": {
+                        "fill": {"value": "pink"},
+                        "size": {"value": 300}
+                    }
                 }
             }
         ]
