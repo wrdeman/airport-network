@@ -1,56 +1,33 @@
-from collections import Counter, OrderedDict
-from operator import itemgetter
+from collections import Counter
 
-from flask import jsonify, render_template, request, Response
+from flask import (
+    jsonify,
+    render_template,
+    request,
+    Response,
+    session,
+)
+
 import networkx as nx
 import numpy as np
 
-from app import app, vega
-from app.graph import Graph
-
-gr = Graph()
-
-
-def sort_degrees(V, limit=None):
-    V = OrderedDict(
-        sorted(
-            V.iteritems(), key=itemgetter(1), reverse=True
-        )[:limit]
-    )
-    return V
-
-
-def get_current_airports():
-    """ get a list of airports for drop down boxes based on the current
-    graph
-    """
-    filtered_airports = [
-        airport
-        for airport in gr.airport_data.values()
-        if airport['code'] in nx.nodes(gr.graph)
-    ]
-
-    airport_list = OrderedDict()
-    for airport in sorted(filtered_airports, key=itemgetter('code')):
-        airport_list[airport['code']] = airport['name']
-
-    return airport_list
+from app import app, utils, vega
 
 
 @app.route('/')
 @app.route('/index')
 def index():
+    gr = utils.get_graph(session)
     _, v = gr.vulnerability(limit=5)
-
-    airport_list = get_current_airports()
+    airport_list = utils.get_current_airports(session)
 
     return render_template(
         'home.html',
         airports=airport_list,
-        degrees=sort_degrees(
+        degrees=utils.sort_degrees(
             nx.degree_centrality(gr.graph), limit=5
         ),
-        eigens=sort_degrees(
+        eigens=utils.sort_degrees(
             nx.eigenvector_centrality(gr.graph), limit=5
         ),
         vulnerability=v
@@ -59,7 +36,7 @@ def index():
 
 @app.route('/route')
 def route():
-    airport_list = get_current_airports()
+    airport_list = utils.get_current_airports(session)
     return render_template(
         'route.html',
         airports=airport_list,
@@ -88,7 +65,7 @@ def histogram():
 def airports(airport_code=None):
     """ get information on an airport or return all airports
     """
-    global gr
+    gr = utils.get_graph(session)
     if request.method == 'GET':
         if airport_code:
             data = gr.airport_data.get(airport_code) or None
@@ -112,7 +89,9 @@ def airports(airport_code=None):
 
     elif request.method == 'POST':
         # using this to refresh the graph
-        gr = Graph()
+        if 'network' in session:
+            session.pop('network', None)
+        gr = utils.get_graph(session)
         return Response("Restored", status=200)
 
 
@@ -120,6 +99,7 @@ def airports(airport_code=None):
 @app.route('/flights/<departure_code>')
 @app.route('/flights/<departure_code>/<destination_code>')
 def flights(departure_code=None, destination_code=None):
+    gr = utils.get_graph(session)
     if departure_code and destination_code:
         # get shortest paths
         shortest_paths = []
@@ -171,6 +151,7 @@ def flights(departure_code=None, destination_code=None):
 
 @app.route('/degree/<plot_type>')
 def degree(plot_type=None):
+    gr = utils.get_graph(session)
     data = Counter(nx.degree(gr.graph).values())
     if plot_type == 'scatter':
         data = [
