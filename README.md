@@ -1,7 +1,7 @@
 #Airports
 A little flask app to explore networkx, vega and some basic airport data.
 
-My preference is Ubuntu and the
+My preference is Ubuntu, vagrant and lxc.
 
 ##Requirements
 * [salt](https://docs.saltstack.com/en/latest/topics/tutorials/quickstart.html)
@@ -15,3 +15,5 @@ vagrant box add fghrem/trusty64
 vagrant up
 
 ```
+
+Check out [localhost:8000](http://localhost:8000)
