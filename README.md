@@ -17,3 +17,5 @@ vagrant up
 ```
 
 Check out [localhost:8000](http://localhost:8000)
+
+NOTE: my salt state does start gunicorn properly. You need to start it manually, stop and then use supervisor!
