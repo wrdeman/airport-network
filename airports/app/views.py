@@ -43,13 +43,20 @@ def route():
     )
 
 
+@app.route('/london')
+def london():
+    return render_template(
+        'london.html'
+    )
+
+
 # vega views
 @app.route('/map')
 @app.route('/map/<departure_code>/<destination_code>')
 def map(departure_code=None, destination_code=None):
     return jsonify(
         **vega.BareMap().get_json(
-            **{'src': departure_code, 'dst':destination_code}
+            **{'src': departure_code, 'dst': destination_code}
         )
     )
 
@@ -57,6 +64,12 @@ def map(departure_code=None, destination_code=None):
 @app.route('/histogram')
 def histogram():
     return jsonify(**vega.Scatter().get_json())
+
+
+
+@app.route('/london_map')
+def london_map():
+    return jsonify(**vega.LondonMap().get_json())
 
 
 # APIs
@@ -147,6 +160,13 @@ def flights(departure_code=None, destination_code=None):
                 'count': edge[2]['weight']
             })
         return jsonify(flight_data=data)
+
+
+@app.route('/stations', methods=['GET'])
+def stations():
+    session.clear()
+    gr = utils.get_graph(session, key='underground')
+    return jsonify(stations=gr.station_data.values())
 
 
 @app.route('/degree/<plot_type>')

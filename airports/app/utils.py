@@ -3,16 +3,19 @@ from operator import itemgetter
 
 import networkx as nx
 
-from app.graph import Graph
+from app.graph import Graph, Underground
 
 
-def get_graph(session):
-    if 'network' not in session:
-        gr = Graph()
-        session['network'] = gr
+def get_graph(session, key='network'):
+    if key not in session:
+        if key == 'network':
+            gr = Graph()
+        elif key == 'underground':
+            gr = Underground()
+        session[key] = gr
         return gr
     else:
-        return session['network']
+        return session[key]
 
 
 def sort_degrees(V, limit=None):

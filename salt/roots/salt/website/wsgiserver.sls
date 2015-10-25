@@ -40,3 +40,4 @@ supervisored_gunicorn:
     - require:
       - pkg: supervisor
       - pip: gunicorn
+    - last
