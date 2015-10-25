@@ -66,7 +66,21 @@ class Graph(object):
 
 class Underground(Graph):
     def build_graph(self):
-        self.graph = nx.Graph()
+        self.tube_lines = []
+        with open('data/lines.csv') as f:
+            self.graph = nx.read_edgelist(
+                f,
+                nodetype=str,
+                data=(('line', str),),
+                delimiter=','
+            )
+
+            self.tube_lines = list(
+                set(
+                    [edge['line']
+                     for edge in self.graph.edges(data=True)]
+                )
+            )
 
         with open('data/stations.json') as fs:
             stations = json.load(fs)
@@ -81,17 +95,3 @@ class Underground(Graph):
                         }
                     }
                 )
-
-        with open('data/underground_lines.json') as f:
-            lines = json.load(f)
-            edges = []
-            for line in lines:
-                station = line['line']
-                stops = line['stops']
-                for i in range(len(stops)-1):
-                    src = stops[i]
-                    dst = stops[i+1]
-                    edges.append(
-                        (src, dst, {"line": line["line"]})
-                    )
-            self.graph.add_edges_from(edges)

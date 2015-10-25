@@ -18,7 +18,9 @@
     <script src="http://vega.github.io/vega-editor/vendor/d3.geo.projection.min.js" charset="utf-8"></script>
     <script src="http://vega.github.io/vega-editor/vendor/d3.layout.cloud.js" charset="utf-8"></script>
     <script src="http://vega.github.io/vega-editor/vendor/vega.js" charset="utf-8"></script>
-    <script src="http://vega.github.io/vega-editor/vendor/vega-embed.js" charset="utf-8"></script>
+    <!-- <script src="http://vega.github.io/vega-editor/vendor/vega-embed.js" charset="utf-8"></script> -->
+    <script src="{{url_for('static', filename='vega-embed/vega-embed.js')}}" charset="utf-8"></script>
+    <script src="{{url_for('static', filename='svg-pan-zoom/dist/svg-pan-zoom.min.js')}}"></script>
 
     <script src="{{url_for('static', filename='airports/airports.js')}}"></script>
 
@@ -26,16 +28,39 @@
     $(document).ready(function(){
 
     // var appView = new AppView();
-    var src;
-    var dst;
 
-    var refresh_map = function(a, b){
-      var url="{{url_for('london_map')}}";
-
+    var refresh_map = function(a){
+      if (a){
+        var url="{{url_for('london_map')}}"+'/'+a;
+      }
+      else {
+        var url="{{url_for('london_map')}}";
+      }
     vg.embed('#vis', url=url, function(view, vega_spec) {
+      var panZoomTiger = svgPanZoom(".marks", {
+       zoomEnabled: true,
+       controlIconsEnabled: true,
+       fit: true,
+       center: true,
+       })
+
+    function changeText() {
+    $('#station_text').html($(".mark-text").text());
+    }
+
+    var text = document.getElementsByClassName('mark-text')[0]
+    text.addEventListener("change", changeText, false);
+    changeText();
     });
     };
-    refresh_map(null, null);
+
+    refresh_map(null);
+
+    $("#select_line").select2();
+    $("#select_line").on("change", function (e) {
+      refresh_map($(this).val());
+    });
+
 
     });
   </script>
@@ -47,7 +72,13 @@
     <br>
     <br>
     <div id="vis"></div>
+    <p id="station_text"></p>
 
+    <select id="select_line">
+      {% for line in lines %}
+      <option value="{{line}}">{{line}}</option>
+      {% endfor %}
+    </select>
 
   </body>
 

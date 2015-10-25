@@ -45,8 +45,14 @@ def route():
 
 @app.route('/london')
 def london():
+    session.clear()
+    gr = utils.get_graph(session, key='underground')
+    stations = gr.station_data
+    lines = gr.tube_lines
     return render_template(
-        'london.html'
+        'london.html',
+        stations=stations,
+        lines=lines
     )
 
 
@@ -63,13 +69,17 @@ def map(departure_code=None, destination_code=None):
 
 @app.route('/histogram')
 def histogram():
-    return jsonify(**vega.Scatter().get_json())
-
+    return jsonify(
+        **vega.Scatter().get_json()
+    )
 
 
 @app.route('/london_map')
-def london_map():
-    return jsonify(**vega.LondonMap().get_json())
+@app.route('/london_map/<line>')
+def london_map(line=None):
+    return jsonify(
+        **vega.LondonMap().get_json(**{'line': line})
+    )
 
 
 # APIs
@@ -164,9 +174,26 @@ def flights(departure_code=None, destination_code=None):
 
 @app.route('/stations', methods=['GET'])
 def stations():
-    session.clear()
     gr = utils.get_graph(session, key='underground')
     return jsonify(stations=gr.station_data.values())
+
+
+@app.route('/lines', methods=['GET'])
+@app.route('/lines/<line>', methods=['GET'])
+def lines(line=None):
+    session.clear()
+    gr = utils.get_graph(session, key='underground')
+
+    data = []
+    edges = gr.graph.edges(data=True)
+    for edge in edges:
+        if not line or line in edge[2]['line']:
+            data.append({
+                'origin': edge[0],
+                'destination': edge[1],
+                'line': edge[2]['line']
+            })
+    return jsonify(lines=data)
 
 
 @app.route('/degree/<plot_type>')

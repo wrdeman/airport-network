@@ -22,7 +22,8 @@ class BaseAirPlot(object):
         spec['axes'] = self.get_axes()
 
         response = OrderedDict({
-            "spec": spec
+            "spec": spec,
+            "renderer": 'svg'
         })
 
         return response
@@ -345,21 +346,19 @@ class BareMap(BaseAirPlot):
 
 class LondonMap(BaseAirPlot):
     def get_data(self, **kwargs):
-        scale = 41000
+        scaling = 41000
         trans_x = 480
         trans_y = 43350
-        # src = kwargs['src']
-        # dst = kwargs['dst']
 
-        # flight_url = url_for("flights")
+        line = kwargs['line']
 
-        # routes_url = flight_url
-        # if src and dst:
-        #     routes_url = url_for(
-        #         "flights",
-        #         departure_code=src,
-        #         destination_code=dst
-        #     )
+        line_url = url_for("lines")
+        if line:
+            line_url = url_for(
+                "lines",
+                line=line
+            )
+
         return [
             {
                 "name": "boroughs",
@@ -368,31 +367,10 @@ class LondonMap(BaseAirPlot):
                 "transform": [
                     {
                         "type": "geopath", "projection": "mercator",
-                        "scale": scale, "translate": [trans_x, trans_y]
+                        "scale": scaling, "translate": [trans_x, trans_y]
                     }
                 ]
             },
-            # {
-            #     "name": "traffic",
-            #     "url": flight_url,
-            #     "format": {
-            #         "type": "json",
-            #         "parse": "auto",
-            #         "property": "flight_data"
-            #     },
-            #     "transform": [
-            #         {
-            #             "type": "aggregate", "groupby": ["origin"],
-            #             "summarize": [
-            #                 {
-            #                     "field": "count",
-            #                     "ops": ["sum"],
-            #                     "as": ["flights"]
-            #                 }
-            #             ]
-            #         }
-            #     ]
-            # },
             {
                 "name": "stations",
                 "url": url_for("stations"),
@@ -402,53 +380,43 @@ class LondonMap(BaseAirPlot):
                     "property": "stations"
                 },
                 "transform": [
-                    # {
-                    #     "type": "lookup", "on": "traffic", "onKey": "origin",
-                    #     "keys": ["code"], "as": ["traffic"]
-                    # },
-                    # {
-                    #     "type": "filter",
-                    #     "test": "datum.traffic != null"
-                    # },
                     {
                         "type": "geo", "projection": "mercator",
-                        "scale": scale, "translate": [trans_x, trans_y],
+                        "scale": scaling, "translate": [trans_x, trans_y],
                         "lon": "longitude", "lat": "latitude"
                     },
                     {
                         "type": "filter",
                         "test": "datum.layout_x != null && datum.layout_y != null"
                     },
-            #         {"type": "sort", "by": "-traffic.flights"}
                 ]
             },
-            # {
-            #     "name": "routes",
-            #     "url": routes_url,
-            #     "format": {
-            #         "type": "json",
-            #         "parse": "auto",
-            #         "property": "flight_data"
-            #     },
-            #     "transform": [
-            #         #{ "type": "filter", "test": "hover && hover.code == datum.origin" },
-            #         {
-            #             "type": "lookup",
-            #             "on": "airports",
-            #             "onKey": "code",
-            #             "keys": ["origin", "destination"],
-            #             "as": ["_source", "_target"]
-            #         },
-            #         {
-            #             "type": "filter",
-            #             "test": "datum._source && datum._target"
-            #         },
-            #         {
-            #             "type": "linkpath",
-            #             "shape": "line"
-            #         }
-            #     ]
-            # }
+            {
+                "name": "lines",
+                "url": line_url,
+                "format": {
+                    "type": "json",
+                    "parse": "auto",
+                    "property": "lines"
+                },
+                "transform": [
+                    {
+                        "type": "lookup",
+                        "on": "stations",
+                        "onKey": "name",
+                        "keys": ["origin", "destination"],
+                        "as": ["_source", "_target"]
+                    },
+                    {
+                        "type": "filter",
+                        "test": "datum._source && datum._target"
+                    },
+                    {
+                        "type": "linkpath",
+                        "shape": "line"
+                    }
+                ]
+            }
         ]
 
     def get_marks(self):
@@ -472,51 +440,53 @@ class LondonMap(BaseAirPlot):
                         "x": {"field": "layout_x"},
                         "y": {"field": "layout_y"},
                         # "size": {"scale": "size", "field": "traffic.flights"},
+                        "size": {"value": 5},
                         "fill": {"value": "steelblue"},
                         "fillOpacity": {"value": 0.8},
-                        "stroke": {"value": "white"},
+                        "stroke": {"value": "black"},
                         "strokeWidth": {"value": 1.5}
                     }
                 }
             },
-            # {
-            #     "type": "text",
-            #     "interactive": False,
-            #     "properties": {
-            #         "enter": {
-            #             "x": {"value": 895},
-            #             "y": {"value": 0},
-            #             "fill": {"value": "black"},
-            #             "fontSize": {"value": 20},
-            #             "align": {"value": "right"}
-            #         },
-            #         "update": {
-            #             "text": {"signal": "title"}
-            #         }
-            #     }
-            # },
-            # {
-            #     "type": "path",
-            #     "interactive": False,
-            #     "from": {"data": "routes"},
-            #     "properties": {
-            #         "enter": {
-            #             "path": {"field": "layout_path"},
-            #             "stroke": {"value": "black"},
-            #             "strokeOpacity": {"value": 0.15}
-            #         }
-            #     }
-            # }
+            {
+                "type": "text",
+                "interactive": False,
+                "properties": {
+                    "enter": {
+                        "x": {"value": 895},
+                        "y": {"value": 0},
+                        "fill": {"value": "black"},
+                        "fontSize": {"value": 20},
+                        "align": {"value": "right"}
+                    },
+                    "update": {
+                        "text": {"signal": "title"}
+                    }
+                }
+            },
+            {
+                "type": "path",
+                "interactive": False,
+                "from": {"data": "lines"},
+                "properties": {
+                    "enter": {
+                        "path": {"field": "layout_path"},
+                        "stroke": {"scale": "color", "field": "line"},
+                        "strokeOpacity": {"value": 0.5},
+                        "strokeWidth": {"value": 4}
+                    }
+                }
+            }
         ]
 
     def get_scales(self):
         return [
-            # {
-            #     "name": "size",
-            #     "type": "linear",
-            #     "domain": {"data": "traffic", "field": "flights"},
-            #     "range": [16, 1000]
-            # }
+            {
+                "name": "color",
+                "type": "ordinal",
+                "domain": {"data": "lines", "field": "line"},
+                "range": "category10"
+            }
         ]
 
     def get_signals(self):
