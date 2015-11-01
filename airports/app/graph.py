@@ -67,17 +67,15 @@ class Graph(object):
 class Underground(Graph):
     def build_graph(self):
         self.tube_lines = []
+        self.graph = nx.MultiGraph()
         with open('data/lines.csv') as f:
-            self.graph = nx.read_edgelist(
-                f,
-                nodetype=str,
-                data=(('line', str),),
-                delimiter=','
-            )
+            fread = csv.reader(f)
+            for edge in fread:
+                self.graph.add_edge(edge[0], edge[1], line=edge[2])
 
             self.tube_lines = list(
                 set(
-                    [edge['line']
+                    [edge[2]['line']
                      for edge in self.graph.edges(data=True)]
                 )
             )
