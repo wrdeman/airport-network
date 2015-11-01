@@ -18,6 +18,7 @@ class BaseAirPlot(object):
         spec['data'] = self.get_data(**kwargs)
         spec['scales'] = self.get_scales()
         spec['signals'] = self.get_signals()
+        spec['predicates'] = self.get_predicates()
         spec['marks'] = self.get_marks()
         spec['axes'] = self.get_axes()
 
@@ -32,6 +33,9 @@ class BaseAirPlot(object):
         raise NotImplementedError
 
     def get_scales(self):
+        return []
+
+    def get_predicates(self):
         return []
 
     def get_signals(self):
@@ -53,7 +57,11 @@ class Scatter(BaseAirPlot):
         return [
             {
                 "name": "points",
-                "url": url_for("degree", plot_type='scatter'),
+                "url": url_for(
+                    "degree",
+                    plot_type='scatter',
+                    network=kwargs['network']
+                ),
                 "format": {
                     "type": "json",
                     "parse": "auto",
@@ -62,7 +70,11 @@ class Scatter(BaseAirPlot):
             },
             {
                 "name": "bestfit",
-                "url": url_for("degree", plot_type='powerlaw'),
+                "url": url_for(
+                    "degree",
+                    plot_type='powerlaw',
+                    network=kwargs['network']
+                ),
                 "format": {
                     "type": "json",
                     "parse": "auto",
@@ -237,7 +249,6 @@ class BareMap(BaseAirPlot):
                     "property": "flight_data"
                 },
                 "transform": [
-                    #{ "type": "filter", "test": "hover && hover.code == datum.origin" },
                     {
                         "type": "lookup",
                         "on": "airports",
@@ -286,22 +297,6 @@ class BareMap(BaseAirPlot):
                 }
             },
             {
-                "type": "text",
-                "interactive": False,
-                "properties": {
-                    "enter": {
-                        "x": {"value": 895},
-                        "y": {"value": 0},
-                        "fill": {"value": "black"},
-                        "fontSize": {"value": 20},
-                        "align": {"value": "right"}
-                    },
-                    "update": {
-                        "text": {"signal": "title"}
-                    }
-                }
-            },
-            {
                 "type": "path",
                 "interactive": False,
                 "from": {"data": "routes"},
@@ -312,7 +307,40 @@ class BareMap(BaseAirPlot):
                         "strokeOpacity": {"value": 0.15}
                     }
                 }
+            },
+            {
+                "type": "text",
+                "properties": {
+                    "enter": {
+                        "align": {"value": "center"},
+                        "fill": {"value": "#000"},
+                    },
+                    "update": {
+                        "x": {
+                            "signal": "tooltip.layout_x",
+                            "offset": 25
+                        },
+                        "y": {
+                            "signal": "tooltip.layout_y",
+                            "offset": -10
+                        },
+                        "text": {"signal": "tooltip.name"},
+                        "fillOpacity": {
+                            "rule": [
+                                {
+                                    "predicate": {
+                                        "name": "ifTooltip",
+                                        "id": {"value": None}
+                                    },
+                                    "value": 0
+                                },
+                                {"value": 1}
+                            ]
+                        }
+                    }
+                }
             }
+
         ]
 
     def get_scales(self):
@@ -322,24 +350,45 @@ class BareMap(BaseAirPlot):
                 "type": "linear",
                 "domain": {"data": "traffic", "field": "flights"},
                 "range": [16, 1000]
+            },
+            {
+                "name": "xscale",
+                "range": "width",
+                "domain": {
+                    "data": "airports", "field": "layout_x"
+                }
+            },
+            {
+                "name": "yscale",
+                "range": "height",
+                "domain": {
+                    "data": "airports", "field": "layout_y"
+                }
             }
+
         ]
 
     def get_signals(self):
         return [
             {
-                "name": "hover", "init": None,
+                "name": "tooltip",
+                "init": {},
                 "streams": [
                     {"type": "symbol:mouseover", "expr": "datum"},
-                    {"type": "symbol:mouseout", "expr": "null"}
+                    {"type": "symbol:mouseout", "expr": "{}"}
                 ]
-            },
+            }
+        ]
+
+    def get_predicates(self):
+        return [
             {
-                "name": "title", "init": "U.S. Airports, 2008",
-                "streams": [{
-                    "type": "hover",
-                    "expr": "hover ? hover.name + ' (' + hover.code + ')' : 'U.S. Airports, 2008'"
-                }]
+                "name": "ifTooltip",
+                "type": "==",
+                "operands": [
+                    {"signal": "tooltip._id"},
+                    {"arg": "id"}
+                ]
             }
         ]
 
@@ -439,28 +488,11 @@ class LondonMap(BaseAirPlot):
                     "enter": {
                         "x": {"field": "layout_x"},
                         "y": {"field": "layout_y"},
-                        # "size": {"scale": "size", "field": "traffic.flights"},
                         "size": {"value": 5},
                         "fill": {"value": "steelblue"},
                         "fillOpacity": {"value": 0.8},
                         "stroke": {"value": "black"},
                         "strokeWidth": {"value": 1.5}
-                    }
-                }
-            },
-            {
-                "type": "text",
-                "interactive": False,
-                "properties": {
-                    "enter": {
-                        "x": {"value": 895},
-                        "y": {"value": 0},
-                        "fill": {"value": "black"},
-                        "fontSize": {"value": 20},
-                        "align": {"value": "right"}
-                    },
-                    "update": {
-                        "text": {"signal": "title"}
                     }
                 }
             },
@@ -476,6 +508,38 @@ class LondonMap(BaseAirPlot):
                         "strokeWidth": {"value": 4}
                     }
                 }
+            },
+            {
+                "type": "text",
+                "properties": {
+                    "enter": {
+                        "align": {"value": "center"},
+                        "fill": {"value": "#000"},
+                    },
+                    "update": {
+                        "x": {
+                            "signal": "tooltip.layout_x",
+                            "offset": 25
+                        },
+                        "y": {
+                            "signal": "tooltip.layout_y",
+                            "offset": -10
+                        },
+                        "text": {"signal": "tooltip.name"},
+                        "fillOpacity": {
+                            "rule": [
+                                {
+                                    "predicate": {
+                                        "name": "ifTooltip",
+                                        "id": {"value": None}
+                                    },
+                                    "value": 0
+                                },
+                                {"value": 1}
+                            ]
+                        }
+                    }
+                }
             }
         ]
 
@@ -486,23 +550,43 @@ class LondonMap(BaseAirPlot):
                 "type": "ordinal",
                 "domain": {"data": "lines", "field": "line"},
                 "range": "category10"
+            },
+            {
+                "name": "xscale",
+                "range": "width",
+                "domain": {
+                    "data": "stations", "field": "layout_x"
+                }
+            },
+            {
+                "name": "yscale",
+                "range": "height",
+                "domain": {
+                    "data": "stations", "field": "layout_y"
+                }
             }
         ]
 
     def get_signals(self):
         return [
             {
-                "name": "hover", "init": None,
+                "name": "tooltip",
+                "init": {},
                 "streams": [
                     {"type": "symbol:mouseover", "expr": "datum"},
-                    {"type": "symbol:mouseout", "expr": "null"}
+                    {"type": "symbol:mouseout", "expr": "{}"}
                 ]
-            },
+            }
+        ]
+
+    def get_predicates(self):
+        return [
             {
-                "name": "title", "init": "London Underground",
-                "streams": [{
-                    "type": "hover",
-                    "expr": "hover ? hover.name  : 'London Underground'"
-                }]
+                "name": "ifTooltip",
+                "type": "==",
+                "operands": [
+                    {"signal": "tooltip._id"},
+                    {"arg": "id"}
+                ]
             }
         ]

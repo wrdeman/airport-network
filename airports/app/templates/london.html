@@ -44,6 +44,10 @@
        center: true,
        })
 
+    vg.embed('#vis1', url="{{url_for('histogram', network='underground')}}", function(view, vega_spec) {
+      $(".vega-params").hide();
+      });
+
     function changeText() {
     $('#station_text').html($(".mark-text").text());
     }
@@ -61,24 +65,57 @@
       refresh_map($(this).val());
     });
 
-
     });
   </script>
 
 
   </head>
   <body>
+
     <div id="container"></div>
     <br>
     <br>
     <div id="vis"></div>
-    <p id="station_text"></p>
 
     <select id="select_line">
       {% for line in lines %}
       <option value="{{line}}">{{line}}</option>
       {% endfor %}
     </select>
+
+    <table id="tab_degree">
+      <thead>
+	<tr>
+	  <td>Code</td><td>Degree Centrality</td>
+	</tr>
+      </thead>
+      <tbody>
+	{% for code, deg in degrees.iteritems() %}
+	<tr>
+	  <td>{{code}}</td><td>{{deg}}</td>
+	</tr>
+	{% endfor %}
+      </tbody>
+    </table>
+
+
+    <table id="tab_vulner">
+      <thead>
+	<tr>
+	  <td>Code</td><td>Vulnerability</td>
+	</tr>
+      </thead>
+      <tbody>
+	{% for code, deg in vulnerability.iteritems() %}
+	<tr>
+	  <td>{{code}}</td><td>{{deg}}</td>
+	</tr>
+	{% endfor %}
+      </tbody>
+    </table>
+
+    <div id="vis1"></div>
+
 
   </body>
 

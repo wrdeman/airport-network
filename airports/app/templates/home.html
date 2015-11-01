@@ -117,13 +117,11 @@
 
   </body>
 
-
-
   <script type="text/javascript">
       vg.embed('#vis', url="{{url_for('map')}}", function(view, vega_spec) {
       });
 
-      vg.embed('#vis1', url="{{url_for('histogram')}}", function(view, vega_spec) {
+      vg.embed('#vis1', url="{{url_for('histogram', network='network')}}", function(view, vega_spec) {
       $(".vega-params").hide();
       });
   </script>

@@ -45,14 +45,19 @@ def route():
 
 @app.route('/london')
 def london():
-    session.clear()
     gr = utils.get_graph(session, key='underground')
+    _, v = gr.vulnerability(limit=5)
+
     stations = gr.station_data
     lines = gr.tube_lines
     return render_template(
         'london.html',
         stations=stations,
-        lines=lines
+        lines=lines,
+        degrees=utils.sort_degrees(
+            nx.degree_centrality(gr.graph), limit=5
+        ),
+        vulnerability=v
     )
 
 
@@ -67,10 +72,10 @@ def map(departure_code=None, destination_code=None):
     )
 
 
-@app.route('/histogram')
-def histogram():
+@app.route('/histogram/<network>')
+def histogram(network='network'):
     return jsonify(
-        **vega.Scatter().get_json()
+        **vega.Scatter().get_json(**{'network': network})
     )
 
 
@@ -196,9 +201,9 @@ def lines(line=None):
     return jsonify(lines=data)
 
 
-@app.route('/degree/<plot_type>')
-def degree(plot_type=None):
-    gr = utils.get_graph(session)
+@app.route('/degree/<plot_type>/<network>')
+def degree(plot_type=None, network='network'):
+    gr = utils.get_graph(session, key=network)
     data = Counter(nx.degree(gr.graph).values())
     if plot_type == 'scatter':
         data = [
