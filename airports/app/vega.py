@@ -18,11 +18,13 @@ class BaseAirPlot(object):
         spec['data'] = self.get_data(**kwargs)
         spec['scales'] = self.get_scales()
         spec['signals'] = self.get_signals()
+        spec['predicates'] = self.get_predicates()
         spec['marks'] = self.get_marks()
         spec['axes'] = self.get_axes()
 
         response = OrderedDict({
-            "spec": spec
+            "spec": spec,
+            "renderer": 'svg'
         })
 
         return response
@@ -31,6 +33,9 @@ class BaseAirPlot(object):
         raise NotImplementedError
 
     def get_scales(self):
+        return []
+
+    def get_predicates(self):
         return []
 
     def get_signals(self):
@@ -52,7 +57,11 @@ class Scatter(BaseAirPlot):
         return [
             {
                 "name": "points",
-                "url": url_for("degree", plot_type='scatter'),
+                "url": url_for(
+                    "degree",
+                    plot_type='scatter',
+                    network=kwargs['network']
+                ),
                 "format": {
                     "type": "json",
                     "parse": "auto",
@@ -61,7 +70,11 @@ class Scatter(BaseAirPlot):
             },
             {
                 "name": "bestfit",
-                "url": url_for("degree", plot_type='powerlaw'),
+                "url": url_for(
+                    "degree",
+                    plot_type='powerlaw',
+                    network=kwargs['network']
+                ),
                 "format": {
                     "type": "json",
                     "parse": "auto",
@@ -236,7 +249,6 @@ class BareMap(BaseAirPlot):
                     "property": "flight_data"
                 },
                 "transform": [
-                    #{ "type": "filter", "test": "hover && hover.code == datum.origin" },
                     {
                         "type": "lookup",
                         "on": "airports",
@@ -285,22 +297,6 @@ class BareMap(BaseAirPlot):
                 }
             },
             {
-                "type": "text",
-                "interactive": False,
-                "properties": {
-                    "enter": {
-                        "x": {"value": 895},
-                        "y": {"value": 0},
-                        "fill": {"value": "black"},
-                        "fontSize": {"value": 20},
-                        "align": {"value": "right"}
-                    },
-                    "update": {
-                        "text": {"signal": "title"}
-                    }
-                }
-            },
-            {
                 "type": "path",
                 "interactive": False,
                 "from": {"data": "routes"},
@@ -311,7 +307,40 @@ class BareMap(BaseAirPlot):
                         "strokeOpacity": {"value": 0.15}
                     }
                 }
+            },
+            {
+                "type": "text",
+                "properties": {
+                    "enter": {
+                        "align": {"value": "center"},
+                        "fill": {"value": "#000"},
+                    },
+                    "update": {
+                        "x": {
+                            "signal": "tooltip.layout_x",
+                            "offset": 25
+                        },
+                        "y": {
+                            "signal": "tooltip.layout_y",
+                            "offset": -10
+                        },
+                        "text": {"signal": "tooltip.name"},
+                        "fillOpacity": {
+                            "rule": [
+                                {
+                                    "predicate": {
+                                        "name": "ifTooltip",
+                                        "id": {"value": None}
+                                    },
+                                    "value": 0
+                                },
+                                {"value": 1}
+                            ]
+                        }
+                    }
+                }
             }
+
         ]
 
     def get_scales(self):
@@ -321,23 +350,408 @@ class BareMap(BaseAirPlot):
                 "type": "linear",
                 "domain": {"data": "traffic", "field": "flights"},
                 "range": [16, 1000]
+            },
+            {
+                "name": "xscale",
+                "range": "width",
+                "domain": {
+                    "data": "airports", "field": "layout_x"
+                }
+            },
+            {
+                "name": "yscale",
+                "range": "height",
+                "domain": {
+                    "data": "airports", "field": "layout_y"
+                }
+            }
+
+        ]
+
+    def get_signals(self):
+        return [
+            {
+                "name": "tooltip",
+                "init": {},
+                "streams": [
+                    {"type": "symbol:mouseover", "expr": "datum"},
+                    {"type": "symbol:mouseout", "expr": "{}"}
+                ]
+            }
+        ]
+
+    def get_predicates(self):
+        return [
+            {
+                "name": "ifTooltip",
+                "type": "==",
+                "operands": [
+                    {"signal": "tooltip._id"},
+                    {"arg": "id"}
+                ]
+            }
+        ]
+
+
+class LondonBase(BaseAirPlot):
+    scaling = 1
+    trans_x = 0
+    trans_y = 0
+
+    def get_data(self, **kwargs):
+        line = None
+        if 'line' in kwargs:
+            line = kwargs['line']
+
+        line_url = url_for("lines")
+        if line:
+            line_url = url_for(
+                "lines",
+                line=line
+            )
+
+        return [
+            {
+                "name": "boroughs",
+                "url": "static/airports/london_boroughs.json",
+                "format": {"type": "topojson", "feature": "london"},
+                "transform": [
+                    {
+                        "type": "geopath", "projection": "mercator",
+                        "scale": self.scaling, "translate": [self.trans_x, self.trans_y]
+                    }
+                ]
+            },
+            {
+                "name": "stations",
+                "url": url_for("stations"),
+                "format": {
+                    "type": "json",
+                    "parse": "auto",
+                    "property": "stations"
+                },
+                "transform": [
+                    {
+                        "type": "geo", "projection": "mercator",
+                        "scale": self.scaling, "translate": [self.trans_x, self.trans_y],
+                        "lon": "longitude", "lat": "latitude"
+                    },
+                    {
+                        "type": "filter",
+                        "test": "datum.layout_x != null && datum.layout_y != null"
+                    },
+                ]
+            },
+            {
+                "name": "lines",
+                "url": line_url,
+                "format": {
+                    "type": "json",
+                    "parse": "auto",
+                    "property": "lines"
+                },
+                "transform": [
+                    {
+                        "type": "lookup",
+                        "on": "stations",
+                        "onKey": "name",
+                        "keys": ["source", "target"],
+                        "as": ["_source", "_target"]
+                    },
+                    {
+                        "type": "filter",
+                        "test": "datum._source && datum._target"
+                    },
+                    {
+                        "type": "linkpath",
+                        "shape": "line"
+                    }
+                ]
+            }
+        ]
+
+
+class LondonMap(LondonBase):
+    scaling = 41000
+    trans_x = 480
+    trans_y = 43350
+
+    def get_marks(self):
+        return [
+            {
+                "type": "path",
+                "from": {"data": "boroughs"},
+                "properties": {
+                    "enter": {
+                        "path": {"field": "layout_path"},
+                        "fill": {"value": "#43484A"},
+                        "stroke": {"value": "white"}
+                    }
+                }
+            },
+            {
+                "type": "symbol",
+                "from": {"data": "stations"},
+                "properties": {
+                    "enter": {
+                        "x": {"field": "layout_x"},
+                        "y": {"field": "layout_y"},
+                        "size": {"value": 5},
+                        "fill": {"value": "steelblue"},
+                        "fillOpacity": {"value": 0.8},
+                        "stroke": {"value": "black"},
+                        "strokeWidth": {"value": 1.5}
+                    }
+                }
+            },
+            {
+                "type": "path",
+                "interactive": False,
+                "from": {"data": "lines"},
+                "properties": {
+                    "enter": {
+                        "path": {"field": "layout_path"},
+                        "stroke": {"scale": "color", "field": "line"},
+                        "strokeOpacity": {"value": 0.5},
+                        "strokeWidth": {"value": 4}
+                    }
+                }
+            },
+            {
+                "type": "text",
+                "properties": {
+                    "enter": {
+                        "align": {"value": "center"},
+                        "fill": {"value": "#000"},
+                    },
+                    "update": {
+                        "x": {
+                            "signal": "tooltip.layout_x",
+                            "offset": 25
+                        },
+                        "y": {
+                            "signal": "tooltip.layout_y",
+                            "offset": -10
+                        },
+                        "text": {"signal": "tooltip.name"},
+                        "fillOpacity": {
+                            "rule": [
+                                {
+                                    "predicate": {
+                                        "name": "ifTooltip",
+                                        "id": {"value": None}
+                                    },
+                                    "value": 0
+                                },
+                                {"value": 1}
+                            ]
+                        }
+                    }
+                }
+            }
+        ]
+
+    def get_scales(self):
+        return [
+            {
+                "name": "color",
+                "type": "ordinal",
+                "domain": {"data": "lines", "field": "line"},
+                "range": "category10"
+            },
+            {
+                "name": "xscale",
+                "range": "width",
+                "domain": {
+                    "data": "stations", "field": "layout_x"
+                }
+            },
+            {
+                "name": "yscale",
+                "range": "height",
+                "domain": {
+                    "data": "stations", "field": "layout_y"
+                }
             }
         ]
 
     def get_signals(self):
         return [
             {
-                "name": "hover", "init": None,
+                "name": "tooltip",
+                "init": {},
                 "streams": [
                     {"type": "symbol:mouseover", "expr": "datum"},
-                    {"type": "symbol:mouseout", "expr": "null"}
+                    {"type": "symbol:mouseout", "expr": "{}"}
                 ]
+            }
+        ]
+
+    def get_predicates(self):
+        return [
+            {
+                "name": "ifTooltip",
+                "type": "==",
+                "operands": [
+                    {"signal": "tooltip._id"},
+                    {"arg": "id"}
+                ]
+            }
+        ]
+
+
+class LondonForced(LondonBase):
+    def get_data(self):
+        url = url_for("forced_layout")
+        return [
+            {
+                "name": "stations",
+                "url": url,
+                "format": {
+                    "type": "json",
+                    "parse": "auto",
+                    "property": "stations"
+                }
             },
             {
-                "name": "title", "init": "U.S. Airports, 2008",
-                "streams": [{
-                    "type": "hover",
-                    "expr": "hover ? hover.name + ' (' + hover.code + ')' : 'U.S. Airports, 2008'"
-                }]
+                "name": "edges",
+                "url": url,
+                "format": {
+                    "type": "json",
+                    "parse": "auto",
+                    "property": "lines"
+                },
+                "transform": [
+                    {
+                        "type": "lookup",
+                        "on": "stations",
+                        "keys": ["source", "target"],
+                        "as": ["_source", "_target"]
+                    },
+                    {
+                        "type": "filter",
+                        "test": "datum._source && datum._target"
+                    }
+                ]
+
+            },
+            {
+                "name": "nodes",
+                "url": url,
+                "format": {
+                    "type": "json",
+                    "parse": "auto",
+                    "property": "stations"
+                },
+                "transform": [
+                    {
+                        "type": "force",
+                        "links": "edges",
+                        "linkDistance": 20,
+                        "linkStrength": 5,
+                        "charge": -200,
+                        "interactive": True
+                        }
+                ]
+            }
+        ]
+
+    def get_marks(self):
+        return [
+            {
+                "type": "path",
+                "from": {
+                    "data": "edges",
+                    "transform": [
+                        {
+                            "type": "lookup",
+                            "on": "nodes",
+                            "keys": ["source", "target"],
+                            "as":   ["_source", "_target"]
+                        },
+                        {
+                            "type": "linkpath",
+                            "shape": "line"
+                        }
+                    ]
+                },
+                "properties": {
+                    "update": {
+                        "path": {"field": "layout_path"},
+                        "stroke": {"value": "#000"},
+                        "strokeWidth": {"value": 1.5}
+                    }
+                }
+            },
+            {
+                "type": "symbol",
+                "from": {"data": "nodes"},
+                "properties": {
+                    "update": {
+                        "x": {"field": "layout_x"},
+                        "y": {"field": "layout_y"},
+                        "fill": {"value": "steelblue"}
+                    },
+                    "hover": {
+                        "fill": {"value": "#f00"}
+                    }
+                }
+            },
+            {
+                "type": "text",
+                "properties": {
+                    "enter": {
+                        "align": {"value": "center"},
+                        "fill": {"value": "#000"},
+                    },
+                    "update": {
+                        "x": {
+                            "signal": "tooltip.layout_x",
+                            "offset": 25
+                        },
+                        "y": {
+                            "signal": "tooltip.layout_y",
+                            "offset": -10
+                        },
+                        "text": {"signal": "tooltip.name"},
+                        "fillOpacity": {
+                            "rule": [
+                                {
+                                    "predicate": {
+                                        "name": "ifTooltip",
+                                        "id": {"value": None}
+                                    },
+                                    "value": 0
+                                },
+                                {"value": 1}
+                            ]
+                        }
+                    }
+                }
+            }
+
+        ]
+
+    def get_signals(self):
+        return [
+            {
+                "name": "tooltip",
+                "init": {},
+                "streams": [
+                    {"type": "symbol:mouseover", "expr": "datum"},
+                    {"type": "symbol:mouseout", "expr": "{}"}
+                ]
+            }
+        ]
+
+    def get_predicates(self):
+        return [
+            {
+                "name": "ifTooltip",
+                "type": "==",
+                "operands": [
+                    {"signal": "tooltip._id"},
+                    {"arg": "id"}
+                ]
             }
         ]

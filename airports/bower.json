@@ -17,6 +17,8 @@
     "underscore": "~1.8.3",
     "vega": "~2.2.6",
     "vega-embed": "~1.0.9",
-    "select2": "~4.0.0"
+    "select2": "~4.0.0",
+    "svg-pan-zoom": "~3.2.3",
+    "jquery-ui": "~1.11.4"
   }
 }

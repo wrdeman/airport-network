@@ -43,20 +43,55 @@ def route():
     )
 
 
+@app.route('/london')
+def london():
+    gr = utils.get_graph(session, key='underground')
+    _, v = gr.vulnerability(limit=5)
+
+    stations = gr.station_data
+    lines = gr.tube_lines
+    return render_template(
+        'london.html',
+        stations=stations,
+        lines=lines,
+        degrees=utils.sort_degrees(
+            nx.degree_centrality(gr.graph), limit=5
+        ),
+        vulnerability=v
+    )
+
+
 # vega views
 @app.route('/map')
 @app.route('/map/<departure_code>/<destination_code>')
 def map(departure_code=None, destination_code=None):
     return jsonify(
         **vega.BareMap().get_json(
-            **{'src': departure_code, 'dst':destination_code}
+            **{'src': departure_code, 'dst': destination_code}
         )
     )
 
 
-@app.route('/histogram')
-def histogram():
-    return jsonify(**vega.Scatter().get_json())
+@app.route('/histogram/<network>')
+def histogram(network='network'):
+    return jsonify(
+        **vega.Scatter().get_json(**{'network': network})
+    )
+
+
+@app.route('/london_map')
+@app.route('/london_map/<line>')
+def london_map(line=None):
+    return jsonify(
+        **vega.LondonMap().get_json(**{'line': line})
+    )
+
+
+@app.route('/london_forced')
+def london_forced():
+    return jsonify(
+        **vega.LondonForced().get_json()
+    )
 
 
 # APIs
@@ -149,9 +184,81 @@ def flights(departure_code=None, destination_code=None):
         return jsonify(flight_data=data)
 
 
-@app.route('/degree/<plot_type>')
-def degree(plot_type=None):
-    gr = utils.get_graph(session)
+@app.route('/stations', methods=['GET'])
+def stations():
+    gr = utils.get_graph(session, key='underground')
+    return jsonify(stations=gr.station_data.values())
+
+
+@app.route('/lines', methods=['GET'])
+@app.route('/lines/<line>', methods=['GET'])
+def lines(line=None):
+    session.clear()
+    gr = utils.get_graph(session, key='underground')
+
+    data = []
+    edges = gr.graph.edges(data=True)
+    for edge in edges:
+        if not line or line in edge[2]['line']:
+            data.append({
+                'source': edge[0],
+                'target': edge[1],
+                'line': edge[2]['line']
+            })
+    return jsonify(lines=data)
+
+
+@app.route('/forced_layout', methods=['GET'])
+def forced_layout():
+    session.clear()
+    gr = utils.get_graph(session, key='underground')
+    all_stations = gr.station_data
+
+    data = []
+    stations = []
+    edges = gr.graph.edges(data=True)
+    for edge in edges:
+        try:
+            stations.append(all_stations[edge[0]])
+            stations.append(all_stations[edge[1]])
+        except:
+            continue
+
+        data.append({
+            'source': edge[0],
+            'target': edge[1],
+            'line': edge[2]['line']
+        })
+    stations = dict((v['name'], v) for v in stations).values()
+    id_stations = []
+    for i, e in enumerate(stations):
+        e['id'] = i
+        id_stations.append(e)
+    id_edges = []
+    for edge in edges:
+        station = filter(
+            lambda station: station['name'] == edge[1],
+            stations
+        )
+        if not station:
+            continue
+        dst = station[0]['id']
+        station = filter(
+            lambda station: station['name'] == edge[0],
+            stations
+        )
+        if not station:
+            continue
+        src = station[0]['id']
+        id_edges.append(
+            {'source': src, 'target': dst, 'data': edge[2]}
+        )
+    return jsonify(stations=id_stations, lines=id_edges)
+
+
+@app.route('/degree/<plot_type>/<network>')
+def degree(plot_type=None, network='network'):
+    gr = utils.get_graph(session, key=network)
     data = Counter(nx.degree(gr.graph).values())
     if plot_type == 'scatter':
         data = [

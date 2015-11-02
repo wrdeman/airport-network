@@ -7,8 +7,10 @@
 
     <link href="{{url_for('static', filename='select2/dist/css/select2.min.css')}}" rel="stylesheet" type="text/css" />
     <link href="{{url_for('static', filename='airports/airports.css')}}" rel="stylesheet" type="text/css" />
-    <!-- <script src="https://code.jquery.com/jquery-1.9.1.min.js"></script> -->
+
     <script src="{{url_for('static', filename='jquery/dist/jquery.min.js')}}"></script>
+    <script src="{{url_for('static', filename='jquery-ui/jquery-ui.min.js')}}"></script>
+
     <script src="{{url_for('static', filename='underscore/underscore.js')}}"></script>
     <script src="{{url_for('static', filename='backbone/backbone.js')}}"></script>
     <script src="{{url_for('static', filename='select2/dist/js/select2.min.js')}}"></script>
@@ -18,34 +20,62 @@
     <script src="http://vega.github.io/vega-editor/vendor/d3.geo.projection.min.js" charset="utf-8"></script>
     <script src="http://vega.github.io/vega-editor/vendor/d3.layout.cloud.js" charset="utf-8"></script>
     <script src="http://vega.github.io/vega-editor/vendor/vega.js" charset="utf-8"></script>
-    <script src="http://vega.github.io/vega-editor/vendor/vega-embed.js" charset="utf-8"></script>
+    <!-- <script src="http://vega.github.io/vega-editor/vendor/vega-embed.js" charset="utf-8"></script> -->
+    <script src="{{url_for('static', filename='vega-embed/vega-embed.js')}}" charset="utf-8"></script>
+    <script src="{{url_for('static', filename='svg-pan-zoom/dist/svg-pan-zoom.min.js')}}"></script>
 
     <script src="{{url_for('static', filename='airports/airports.js')}}"></script>
 
   <script type="text/javascript">
     $(document).ready(function(){
+    $(function() {
+    $( "#tabs" ).tabs();
+      });
+
     // var appView = new AppView();
 
+    var refresh_map = function(a){
+      if (a){
+        var url="{{url_for('london_map')}}"+'/'+a;
+      }
+      else {
+        var url="{{url_for('london_map')}}";
+    }
 
-    $("#delete_airport").select2();
+    var url_forced="{{url_for('london_forced')}}";
 
-    $("#delete_airport").on("change", function (e) {
-    $.ajax({
-      method: "DELETE",
-      url: "{{url_for('airports')}}"+"/"+$(this).val(),
-    }).done(function() {
-      location.reload();
+    vg.embed('#vis', url=url, function(view, vega_spec) {
+      $(".vega-params").hide();
+      var panZoomTiger = svgPanZoom(".marks", {
+       zoomEnabled: true,
+       controlIconsEnabled: true,
+       fit: true,
+       center: true,
+       })
+
+    vg.embed('#vis1', url="{{url_for('histogram', network='underground')}}", function(view, vega_spec) {
+      $(".vega-params").hide();
+      });
+
+    vg.embed('#vis2', url=url_forced, function(view, vega_spec) {
+      $(".vega-params").hide();
     });
 
-    });
+    function changeText() {
+    $('#station_text').html($(".mark-text").text());
+    }
 
-    $("#restore_airports").on("click", function(e){
-    $.ajax({
-      method: "POST",
-      url: "{{url_for('airports')}}",
-    }).done(function() {
-      location.reload();
+    var text = document.getElementsByClassName('mark-text')[0]
+    text.addEventListener("change", changeText, false);
+    changeText();
     });
+    };
+
+    refresh_map(null);
+
+    $("#select_line").select2();
+    $("#select_line").on("change", function (e) {
+      refresh_map($(this).val());
     });
 
     });
@@ -54,20 +84,30 @@
 
   </head>
   <body>
+
     <div id="container"></div>
     <br>
     <br>
-    <div id="vis"></div>
 
+    <div id="tabs">
+      <ul>
+	<li><a href="#tabs-1">Geographic Map</a></li>
+	<li><a href="#tabs-2">Forced Layout</a></li>
+      </ul>
+      <div id="tabs-1">
+	<div id="vis"></div>
+      </div>
+      <div id="tabs-2">
+	<div id="vis2"></div>
+      </div>
+    </div>
 
-    <p><a href="{{url_for('route')}}">Route Planner</a></p>
-    <select id="delete_airport">
-      {% for code, name in airports.iteritems() %}
-      <option value="{{code}}">{{code}} ({{name}})</option>
+    <select id="select_line">
+      {% for line in lines %}
+      <option value="{{line}}">{{line}}</option>
       {% endfor %}
     </select>
 
-     <button id="restore_airports" type="button">Restore</button>
     <table id="tab_degree">
       <thead>
 	<tr>
@@ -76,21 +116,6 @@
       </thead>
       <tbody>
 	{% for code, deg in degrees.iteritems() %}
-	<tr>
-	  <td>{{code}}</td><td>{{deg}}</td>
-	</tr>
-	{% endfor %}
-      </tbody>
-    </table>
-
-    <table id="tab_eigen">
-      <thead>
-	<tr>
-	  <td>Code</td><td>Eigenvector Centrality</td>
-	</tr>
-      </thead>
-      <tbody>
-	{% for code, deg in eigens.iteritems() %}
 	<tr>
 	  <td>{{code}}</td><td>{{deg}}</td>
 	</tr>
@@ -115,16 +140,7 @@
 
     <div id="vis1"></div>
 
+
   </body>
-
-  <script type="text/javascript">
-      vg.embed('#vis', url="{{url_for('map')}}", function(view, vega_spec) {
-      });
-
-      vg.embed('#vis1', url="{{url_for('histogram', network='network')}}", function(view, vega_spec) {
-      $(".vega-params").hide();
-      });
-  </script>
-
 
 </html>

@@ -1,4 +1,6 @@
 import csv
+import json
+
 from collections import OrderedDict
 from operator import itemgetter
 
@@ -60,3 +62,34 @@ class Graph(object):
         Vmax = V.items()[0]
 
         return Vmax, V
+
+
+class Underground(Graph):
+    def build_graph(self):
+        self.tube_lines = []
+        self.graph = nx.MultiGraph()
+        with open('data/lines.csv') as f:
+            fread = csv.reader(f)
+            for edge in fread:
+                self.graph.add_edge(edge[0], edge[1], line=edge[2])
+
+            self.tube_lines = list(
+                set(
+                    [edge[2]['line']
+                     for edge in self.graph.edges(data=True)]
+                )
+            )
+
+        with open('data/stations.json') as fs:
+            stations = json.load(fs)
+            self.station_data = {}
+            for station in stations:
+                self.station_data.update(
+                    {
+                        station["name"]: {
+                            "name": station["name"],
+                            "longitude": station["coordinates"][0],
+                            "latitude": station["coordinates"][1]
+                        }
+                    }
+                )
