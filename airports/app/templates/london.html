@@ -9,6 +9,8 @@
     <link href="{{url_for('static', filename='airports/airports.css')}}" rel="stylesheet" type="text/css" />
 
     <script src="{{url_for('static', filename='jquery/dist/jquery.min.js')}}"></script>
+    <script src="{{url_for('static', filename='jquery-ui/jquery-ui.min.js')}}"></script>
+
     <script src="{{url_for('static', filename='underscore/underscore.js')}}"></script>
     <script src="{{url_for('static', filename='backbone/backbone.js')}}"></script>
     <script src="{{url_for('static', filename='select2/dist/js/select2.min.js')}}"></script>
@@ -26,6 +28,9 @@
 
   <script type="text/javascript">
     $(document).ready(function(){
+    $(function() {
+    $( "#tabs" ).tabs();
+      });
 
     // var appView = new AppView();
 
@@ -35,8 +40,12 @@
       }
       else {
         var url="{{url_for('london_map')}}";
-      }
+    }
+
+    var url_forced="{{url_for('london_forced')}}";
+
     vg.embed('#vis', url=url, function(view, vega_spec) {
+      $(".vega-params").hide();
       var panZoomTiger = svgPanZoom(".marks", {
        zoomEnabled: true,
        controlIconsEnabled: true,
@@ -47,6 +56,10 @@
     vg.embed('#vis1', url="{{url_for('histogram', network='underground')}}", function(view, vega_spec) {
       $(".vega-params").hide();
       });
+
+    vg.embed('#vis2', url=url_forced, function(view, vega_spec) {
+      $(".vega-params").hide();
+    });
 
     function changeText() {
     $('#station_text').html($(".mark-text").text());
@@ -75,7 +88,19 @@
     <div id="container"></div>
     <br>
     <br>
-    <div id="vis"></div>
+
+    <div id="tabs">
+      <ul>
+	<li><a href="#tabs-1">Geographic Map</a></li>
+	<li><a href="#tabs-2">Forced Layout</a></li>
+      </ul>
+      <div id="tabs-1">
+	<div id="vis"></div>
+      </div>
+      <div id="tabs-2">
+	<div id="vis2"></div>
+      </div>
+    </div>
 
     <select id="select_line">
       {% for line in lines %}
@@ -97,7 +122,6 @@
 	{% endfor %}
       </tbody>
     </table>
-
 
     <table id="tab_vulner">
       <thead>

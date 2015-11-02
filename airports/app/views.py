@@ -87,6 +87,13 @@ def london_map(line=None):
     )
 
 
+@app.route('/london_forced')
+def london_forced():
+    return jsonify(
+        **vega.LondonForced().get_json()
+    )
+
+
 # APIs
 @app.route('/airports', methods=['GET', 'POST'])
 @app.route('/airports/<airport_code>', methods=['GET', 'DELETE'])
@@ -194,11 +201,59 @@ def lines(line=None):
     for edge in edges:
         if not line or line in edge[2]['line']:
             data.append({
-                'origin': edge[0],
-                'destination': edge[1],
+                'source': edge[0],
+                'target': edge[1],
                 'line': edge[2]['line']
             })
     return jsonify(lines=data)
+
+
+@app.route('/forced_layout', methods=['GET'])
+def forced_layout():
+    session.clear()
+    gr = utils.get_graph(session, key='underground')
+    all_stations = gr.station_data
+
+    data = []
+    stations = []
+    edges = gr.graph.edges(data=True)
+    for edge in edges:
+        try:
+            stations.append(all_stations[edge[0]])
+            stations.append(all_stations[edge[1]])
+        except:
+            continue
+
+        data.append({
+            'source': edge[0],
+            'target': edge[1],
+            'line': edge[2]['line']
+        })
+    stations = dict((v['name'], v) for v in stations).values()
+    id_stations = []
+    for i, e in enumerate(stations):
+        e['id'] = i
+        id_stations.append(e)
+    id_edges = []
+    for edge in edges:
+        station = filter(
+            lambda station: station['name'] == edge[1],
+            stations
+        )
+        if not station:
+            continue
+        dst = station[0]['id']
+        station = filter(
+            lambda station: station['name'] == edge[0],
+            stations
+        )
+        if not station:
+            continue
+        src = station[0]['id']
+        id_edges.append(
+            {'source': src, 'target': dst, 'data': edge[2]}
+        )
+    return jsonify(stations=id_stations, lines=id_edges)
 
 
 @app.route('/degree/<plot_type>/<network>')

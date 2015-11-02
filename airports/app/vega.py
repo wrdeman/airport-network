@@ -393,13 +393,15 @@ class BareMap(BaseAirPlot):
         ]
 
 
-class LondonMap(BaseAirPlot):
-    def get_data(self, **kwargs):
-        scaling = 41000
-        trans_x = 480
-        trans_y = 43350
+class LondonBase(BaseAirPlot):
+    scaling = 1
+    trans_x = 0
+    trans_y = 0
 
-        line = kwargs['line']
+    def get_data(self, **kwargs):
+        line = None
+        if 'line' in kwargs:
+            line = kwargs['line']
 
         line_url = url_for("lines")
         if line:
@@ -416,7 +418,7 @@ class LondonMap(BaseAirPlot):
                 "transform": [
                     {
                         "type": "geopath", "projection": "mercator",
-                        "scale": scaling, "translate": [trans_x, trans_y]
+                        "scale": self.scaling, "translate": [self.trans_x, self.trans_y]
                     }
                 ]
             },
@@ -431,7 +433,7 @@ class LondonMap(BaseAirPlot):
                 "transform": [
                     {
                         "type": "geo", "projection": "mercator",
-                        "scale": scaling, "translate": [trans_x, trans_y],
+                        "scale": self.scaling, "translate": [self.trans_x, self.trans_y],
                         "lon": "longitude", "lat": "latitude"
                     },
                     {
@@ -453,7 +455,7 @@ class LondonMap(BaseAirPlot):
                         "type": "lookup",
                         "on": "stations",
                         "onKey": "name",
-                        "keys": ["origin", "destination"],
+                        "keys": ["source", "target"],
                         "as": ["_source", "_target"]
                     },
                     {
@@ -467,6 +469,12 @@ class LondonMap(BaseAirPlot):
                 ]
             }
         ]
+
+
+class LondonMap(LondonBase):
+    scaling = 41000
+    trans_x = 480
+    trans_y = 43350
 
     def get_marks(self):
         return [
@@ -565,6 +573,163 @@ class LondonMap(BaseAirPlot):
                     "data": "stations", "field": "layout_y"
                 }
             }
+        ]
+
+    def get_signals(self):
+        return [
+            {
+                "name": "tooltip",
+                "init": {},
+                "streams": [
+                    {"type": "symbol:mouseover", "expr": "datum"},
+                    {"type": "symbol:mouseout", "expr": "{}"}
+                ]
+            }
+        ]
+
+    def get_predicates(self):
+        return [
+            {
+                "name": "ifTooltip",
+                "type": "==",
+                "operands": [
+                    {"signal": "tooltip._id"},
+                    {"arg": "id"}
+                ]
+            }
+        ]
+
+
+class LondonForced(LondonBase):
+    def get_data(self):
+        url = url_for("forced_layout")
+        return [
+            {
+                "name": "stations",
+                "url": url,
+                "format": {
+                    "type": "json",
+                    "parse": "auto",
+                    "property": "stations"
+                }
+            },
+            {
+                "name": "edges",
+                "url": url,
+                "format": {
+                    "type": "json",
+                    "parse": "auto",
+                    "property": "lines"
+                },
+                "transform": [
+                    {
+                        "type": "lookup",
+                        "on": "stations",
+                        "keys": ["source", "target"],
+                        "as": ["_source", "_target"]
+                    },
+                    {
+                        "type": "filter",
+                        "test": "datum._source && datum._target"
+                    }
+                ]
+
+            },
+            {
+                "name": "nodes",
+                "url": url,
+                "format": {
+                    "type": "json",
+                    "parse": "auto",
+                    "property": "stations"
+                },
+                "transform": [
+                    {
+                        "type": "force",
+                        "links": "edges",
+                        "linkDistance": 20,
+                        "linkStrength": 5,
+                        "charge": -200,
+                        "interactive": True
+                        }
+                ]
+            }
+        ]
+
+    def get_marks(self):
+        return [
+            {
+                "type": "path",
+                "from": {
+                    "data": "edges",
+                    "transform": [
+                        {
+                            "type": "lookup",
+                            "on": "nodes",
+                            "keys": ["source", "target"],
+                            "as":   ["_source", "_target"]
+                        },
+                        {
+                            "type": "linkpath",
+                            "shape": "line"
+                        }
+                    ]
+                },
+                "properties": {
+                    "update": {
+                        "path": {"field": "layout_path"},
+                        "stroke": {"value": "#000"},
+                        "strokeWidth": {"value": 1.5}
+                    }
+                }
+            },
+            {
+                "type": "symbol",
+                "from": {"data": "nodes"},
+                "properties": {
+                    "update": {
+                        "x": {"field": "layout_x"},
+                        "y": {"field": "layout_y"},
+                        "fill": {"value": "steelblue"}
+                    },
+                    "hover": {
+                        "fill": {"value": "#f00"}
+                    }
+                }
+            },
+            {
+                "type": "text",
+                "properties": {
+                    "enter": {
+                        "align": {"value": "center"},
+                        "fill": {"value": "#000"},
+                    },
+                    "update": {
+                        "x": {
+                            "signal": "tooltip.layout_x",
+                            "offset": 25
+                        },
+                        "y": {
+                            "signal": "tooltip.layout_y",
+                            "offset": -10
+                        },
+                        "text": {"signal": "tooltip.name"},
+                        "fillOpacity": {
+                            "rule": [
+                                {
+                                    "predicate": {
+                                        "name": "ifTooltip",
+                                        "id": {"value": None}
+                                    },
+                                    "value": 0
+                                },
+                                {"value": 1}
+                            ]
+                        }
+                    }
+                }
+            }
+
         ]
 
     def get_signals(self):
