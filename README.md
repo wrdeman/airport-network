@@ -29,3 +29,5 @@ echo "saving jenkins config"                                          |
 vagrant ssh -c "java -jar /home/vagrant/jenkins-cli.jar -s http://localhost:8080 get-job app > /home/vagrant/app/jenkins/app.xml"
 
 ```
+
+Note: I have had to add a dummy JDK installation in jenkins because of a bug in the version on the [repository](https://issues.jenkins-ci.org/browse/JENKINS-31217)
