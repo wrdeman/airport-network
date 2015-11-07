@@ -1,6 +1,7 @@
 from collections import Counter
 
 from flask import (
+    abort,
     jsonify,
     render_template,
     request,
@@ -21,15 +22,21 @@ def index():
     _, v = gr.vulnerability(limit=5)
     airport_list = utils.get_current_airports(session)
 
+    degrees = utils.sort_degrees(
+        nx.degree_centrality(gr.graph), limit=5
+    )
+    try:
+        eigens = utils.sort_degrees(
+            nx.eigenvector_centrality(gr.graph), limit=5
+        )
+    except:
+        eigens = {}
+
     return render_template(
         'home.html',
         airports=airport_list,
-        degrees=utils.sort_degrees(
-            nx.degree_centrality(gr.graph), limit=5
-        ),
-        eigens=utils.sort_degrees(
-            nx.eigenvector_centrality(gr.graph), limit=5
-        ),
+        degrees=degrees,
+        eigens=eigens,
         vulnerability=v
     )
 
@@ -74,6 +81,8 @@ def map(departure_code=None, destination_code=None):
 
 @app.route('/histogram/<network>')
 def histogram(network='network'):
+    if network not in ['network', 'underground']:
+        abort(404)
     return jsonify(
         **vega.Scatter().get_json(**{'network': network})
     )
@@ -82,6 +91,10 @@ def histogram(network='network'):
 @app.route('/london_map')
 @app.route('/london_map/<line>')
 def london_map(line=None):
+    gr = utils.get_graph(session, key='underground')
+    lines = gr.tube_lines
+    if line not in lines:
+        abort(404)
     return jsonify(
         **vega.LondonMap().get_json(**{'line': line})
     )
@@ -105,11 +118,20 @@ def airports(airport_code=None):
         if airport_code:
             data = gr.airport_data.get(airport_code) or None
             if data:
-                data['degree'] = nx.degree_centrality(gr.graph)[airport_code]
-                data['eigenvector'] = nx.eigenvector_centrality(
+                data['degree'] = nx.degree_centrality(
                     gr.graph
                 )[airport_code]
-            return jsonify(**data)
+                # eigenvector centrality sometimes won't converge
+                try:
+                    eigens = nx.eigenvector_centrality(
+                        gr.graph
+                    )[airport_code]
+                except:
+                    eigens = 0
+                data['eigenvector'] = eigens
+                return jsonify(**data)
+            else:
+                abort(404)
         else:
             return jsonify(airport_data=gr.airport_data.values())
 
@@ -135,6 +157,13 @@ def airports(airport_code=None):
 @app.route('/flights/<departure_code>/<destination_code>')
 def flights(departure_code=None, destination_code=None):
     gr = utils.get_graph(session)
+    airports = gr.airport_data.keys()
+    if departure_code and departure_code not in airports:
+        abort(404)
+
+    if destination_code and destination_code not in airports:
+        abort(404)
+
     if departure_code and destination_code:
         # get shortest paths
         shortest_paths = []
@@ -258,6 +287,13 @@ def forced_layout():
 
 @app.route('/degree/<plot_type>/<network>')
 def degree(plot_type=None, network='network'):
+    if not plot_type:
+        abort(404)
+    if plot_type not in ['scatter', 'powerlaw']:
+        abort(404)
+    if network not in ['network', 'underground']:
+        abort(404)
+
     gr = utils.get_graph(session, key=network)
     data = Counter(nx.degree(gr.graph).values())
     if plot_type == 'scatter':

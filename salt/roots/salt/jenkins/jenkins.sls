@@ -14,3 +14,17 @@ jenkins:
     - reload: True
     - watch:
       - pkg: jenkins
+
+jenkins_cli:
+  cmd.run:
+   - name: |
+        wget http://localhost:8080/jnlpJars/jenkins-cli.jar -P {{ pillar ['jenkins_cli'] }}
+        java -jar {{ pillar ['jenkins_cli'] }}/jenkins-cli.jar -s http://localhost:8080 install-plugin git
+        java -jar {{ pillar ['jenkins_cli'] }}/jenkins-cli.jar -s http://localhost:8080 create-job app < {{ pillar ['jenkins_conf'] }}/app.xml
+        java -jar {{ pillar ['jenkins_cli'] }}/jenkins-cli.jar -s http://localhost:8080 safe-restart
+
+jenkins:
+  user.present:
+    - groups:
+      - jenkins
+      - vagrant

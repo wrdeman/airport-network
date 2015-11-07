@@ -19,3 +19,13 @@ vagrant up
 Check out [localhost:8000](http://localhost:8000)
 
 NOTE: my salt state does start gunicorn properly. You need to start it manually, stop and then use supervisor!
+
+Add this to .git/hooks/post-commit
+```
+#!/bin/sh                                                             |
+echo "running jenkins"                                                |
+curl -X POST --user jenkins:jenkins http://localhost:8080/job/app/build?delay=0sec
+echo "saving jenkins config"                                          |
+vagrant ssh -c "java -jar /home/vagrant/jenkins-cli.jar -s http://localhost:8080 get-job app > /home/vagrant/app/jenkins/app.xml"
+
+```
