@@ -4,3 +4,4 @@ base:
   - python
   - venvwrapper
   - website
+  - jenkins

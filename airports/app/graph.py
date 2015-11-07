@@ -5,17 +5,17 @@ from collections import OrderedDict
 from operator import itemgetter
 
 import networkx as nx
-
+from config import get_network_data as get
 
 class Graph(object):
     def __init__(self):
         self.build_graph()
 
     def build_graph(self):
-        with open('data/flights.csv') as f:
+        with open(get('flights')) as f:
             self.graph = nx.read_weighted_edgelist(f, delimiter=',')
 
-        with open('data/airports.csv') as fcsv:
+        with open(get('airports')) as fcsv:
             reader = csv.reader(fcsv, delimiter=',')
             self.airport_data = {}
             for row in reader:
@@ -68,7 +68,7 @@ class Underground(Graph):
     def build_graph(self):
         self.tube_lines = []
         self.graph = nx.MultiGraph()
-        with open('data/lines.csv') as f:
+        with open(get('lines')) as f:
             fread = csv.reader(f)
             for edge in fread:
                 self.graph.add_edge(edge[0], edge[1], line=edge[2])
@@ -80,7 +80,7 @@ class Underground(Graph):
                 )
             )
 
-        with open('data/stations.json') as fs:
+        with open(get('stations')) as fs:
             stations = json.load(fs)
             self.station_data = {}
             for station in stations:
