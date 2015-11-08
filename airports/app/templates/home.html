@@ -41,8 +41,8 @@
 
     <p><a href="{{url_for('route')}}">Route Planner</a></p>
     <select id="delete_airport">
-      {% for code, name in airports.iteritems() %}
-      <option value="{{code}}">{{code}} ({{name}})</option>
+      {% for code, data in airports.iteritems() %}
+      <option value="{{data.code}}">{{data.code}} ({{data.name}})</option>
       {% endfor %}
     </select>
 

@@ -27,21 +27,3 @@ def sort_degrees(V, limit=None):
         )[:limit]
     )
     return V
-
-
-def get_current_airports(session):
-    """ get a list of airports for drop down boxes based on the current
-    graph
-    """
-    gr = get_graph(session)
-    filtered_airports = [
-        airport
-        for airport in gr.airport_data.values()
-        if airport['code'] in nx.nodes(gr.graph)
-    ]
-
-    airport_list = OrderedDict()
-    for airport in sorted(filtered_airports, key=itemgetter('code')):
-        airport_list[airport['code']] = airport['name']
-
-    return airport_list

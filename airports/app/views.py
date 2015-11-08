@@ -20,7 +20,6 @@ from app import app, utils, vega
 def index():
     gr = utils.get_graph(session)
     _, v = gr.vulnerability(limit=5)
-    airport_list = utils.get_current_airports(session)
 
     degrees = utils.sort_degrees(
         nx.degree_centrality(gr.graph), limit=5
@@ -34,7 +33,7 @@ def index():
 
     return render_template(
         'home.html',
-        airports=airport_list,
+        airports=gr.get_current_nodes,
         degrees=degrees,
         eigens=eigens,
         vulnerability=v
@@ -43,10 +42,10 @@ def index():
 
 @app.route('/route')
 def route():
-    airport_list = utils.get_current_airports(session)
+    gr = utils.get_graph(session)
     return render_template(
         'route.html',
-        airports=airport_list,
+        airports=gr.get_current_nodes,
     )
 
 
@@ -55,12 +54,10 @@ def london():
     gr = utils.get_graph(session, key='underground')
     _, v = gr.vulnerability(limit=5)
 
-    stations = gr.station_data
-    lines = gr.tube_lines
     return render_template(
         'london.html',
-        stations=stations,
-        lines=lines,
+        stations=gr.get_current_nodes,
+        lines=gr.get_current_lines,
         degrees=utils.sort_degrees(
             nx.degree_centrality(gr.graph), limit=5
         ),
@@ -125,7 +122,7 @@ def histogram(network='network'):
 @app.route('/london_map/<line>')
 def london_map(line=None):
     gr = utils.get_graph(session, key='underground')
-    lines = gr.tube_lines
+    lines = gr.get_current_lines
 
     if line and line not in lines:
         abort(404)
@@ -151,7 +148,7 @@ def airports(airport_code=None):
     gr = utils.get_graph(session)
     if request.method == 'GET':
         if airport_code:
-            data = gr.airport_data.get(airport_code) or None
+            data = gr.get_current_nodes.get(airport_code) or None
             if data:
                 data['degree'] = nx.degree_centrality(
                     gr.graph
@@ -168,7 +165,7 @@ def airports(airport_code=None):
             else:
                 abort(404)
         else:
-            return jsonify(airport_data=gr.airport_data.values())
+            return jsonify(airport_data=gr.get_current_nodes.values())
 
     elif request.method == 'DELETE':
         if airport_code:
@@ -192,7 +189,7 @@ def airports(airport_code=None):
 @app.route('/flights/<departure_code>/<destination_code>')
 def flights(departure_code=None, destination_code=None):
     gr = utils.get_graph(session)
-    airports = gr.airport_data.keys()
+    airports = gr.get_current_nodes.keys()
     if departure_code and departure_code not in airports:
         abort(404)
 
@@ -251,7 +248,7 @@ def flights(departure_code=None, destination_code=None):
 @app.route('/stations', methods=['GET'])
 def stations():
     gr = utils.get_graph(session, key='underground')
-    return jsonify(stations=gr.station_data.values())
+    return jsonify(stations=gr.get_current_nodes.values())
 
 
 @app.route('/lines', methods=['GET'])
@@ -278,50 +275,24 @@ def lines(line=None):
 
 @app.route('/forced_layout', methods=['GET'])
 def forced_layout():
-
     gr = utils.get_graph(session, key='underground')
-    all_stations = gr.station_data
+    all_stations = gr.get_current_nodes.values()
 
+    ngr = nx.convert_node_labels_to_integers(gr.graph)
+    nodes = []
+    for k, n in ngr.node.iteritems():
+        n.update({'id': k})
+        nodes.append(n)
+
+    edges = ngr.edges(data=True)
     data = []
-    stations = []
-    edges = gr.graph.edges(data=True)
     for edge in edges:
-        try:
-            stations.append(all_stations[edge[0]])
-            stations.append(all_stations[edge[1]])
-        except:
-            continue
-
         data.append({
             'source': edge[0],
             'target': edge[1],
             'line': edge[2]['line']
         })
-    stations = dict((v['name'], v) for v in stations).values()
-    id_stations = []
-    for i, e in enumerate(stations):
-        e['id'] = i
-        id_stations.append(e)
-    id_edges = []
-    for edge in edges:
-        station = filter(
-            lambda station: station['name'] == edge[1],
-            stations
-        )
-        if not station:
-            continue
-        dst = station[0]['id']
-        station = filter(
-            lambda station: station['name'] == edge[0],
-            stations
-        )
-        if not station:
-            continue
-        src = station[0]['id']
-        id_edges.append(
-            {'source': src, 'target': dst, 'data': edge[2]}
-        )
-    return jsonify(stations=id_stations, lines=id_edges)
+    return jsonify(nodes=nodes, edges=data)
 
 
 @app.route('/degree/<plot_type>/<network>')

@@ -610,7 +610,7 @@ class LondonForced(LondonBase):
                 "format": {
                     "type": "json",
                     "parse": "auto",
-                    "property": "stations"
+                    "property": "nodes"
                 }
             },
             {
@@ -641,7 +641,7 @@ class LondonForced(LondonBase):
                 "format": {
                     "type": "json",
                     "parse": "auto",
-                    "property": "stations"
+                    "property": "nodes"
                 },
                 "transform": [
                     {

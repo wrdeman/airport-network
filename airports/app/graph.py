@@ -8,31 +8,12 @@ import networkx as nx
 from config import get_network_data as get
 
 
-class Graph(object):
+class BaseGraph(object):
     def __init__(self):
         self.build_graph()
 
     def build_graph(self):
-        with open(get('flights')) as f:
-            self.graph = nx.read_weighted_edgelist(f, delimiter=',')
-
-        with open(get('airports')) as fcsv:
-            reader = csv.reader(fcsv, delimiter=',')
-            self.airport_data = {}
-            for row in reader:
-                # only add airports that are nodes
-                if row[0] in nx.nodes(self.graph):
-                    self.airport_data.update({
-                        row[0]: {
-                            'code': row[0],
-                            'name': row[1],
-                            'city': row[2],
-                            'state': row[3],
-                            'country': row[4],
-                            'latitude': row[5],
-                            'longitude': row[6]
-                        }
-                    })
+        raise NotImplementedError
 
     def calculate_global_efficiencies(self):
         E = {}
@@ -64,38 +45,71 @@ class Graph(object):
 
         return Vmax, V
 
+    @property
+    def get_current_nodes(self):
+        node_list = OrderedDict()
+        for node in sorted(self.graph.node, key=itemgetter(0)):
+            node_list[node] = self.graph.node[node]
+        return node_list
 
-class Random(Graph):
+
+class Graph(BaseGraph):
+    def build_graph(self):
+        with open(get('flights')) as f:
+            self.graph = nx.read_weighted_edgelist(f, delimiter=',')
+
+        with open(get('airports')) as fcsv:
+            next(fcsv)
+            reader = csv.reader(fcsv, delimiter=',')
+
+            for row in reader:
+                if row[0] in self.graph.nodes():
+                    self.graph.add_node(
+                        row[0],
+                        code=row[0],
+                        name=row[1],
+                        city=row[2],
+                        state=row[3],
+                        country=row[4],
+                        latitude=row[5],
+                        longitude=row[6]
+                    )
+
+    @property
+    def get_current_nodes(self):
+        node_list = OrderedDict()
+        for node in sorted(self.graph.node, key=itemgetter(0)):
+            node_list[node] = self.graph.node[node]
+        return node_list
+
+
+class Random(BaseGraph):
     def build_graph(self):
         self.graph = nx.newman_watts_strogatz_graph(100, 2, 0.1)
 
 
-class Underground(Graph):
+class Underground(BaseGraph):
     def build_graph(self):
-        self.tube_lines = []
         self.graph = nx.MultiGraph()
         with open(get('lines')) as f:
             fread = csv.reader(f)
             for edge in fread:
                 self.graph.add_edge(edge[0], edge[1], line=edge[2])
 
-            self.tube_lines = list(
-                set(
-                    [edge[2]['line']
-                     for edge in self.graph.edges(data=True)]
-                )
-            )
-
         with open(get('stations')) as fs:
             stations = json.load(fs)
-            self.station_data = {}
             for station in stations:
-                self.station_data.update(
-                    {
-                        station["name"]: {
-                            "name": station["name"],
-                            "longitude": station["coordinates"][0],
-                            "latitude": station["coordinates"][1]
-                        }
-                    }
+                self.graph.add_node(
+                    station['name'],
+                    name=station["name"],
+                    longitude=station["coordinates"][0],
+                    latitude=station["coordinates"][1]
                 )
+
+    @property
+    def get_current_lines(self):
+        return list(
+            set(
+                nx.get_edge_attributes(self.graph, 'line').values()
+            )
+        )
