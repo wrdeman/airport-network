@@ -393,10 +393,11 @@ class BareMap(BaseAirPlot):
         ]
 
 
-class LondonBase(BaseAirPlot):
-    scaling = 1
-    trans_x = 0
-    trans_y = 0
+class LondonMap(BaseAirPlot):
+    scaling = 41000
+    trans_x = 480
+    trans_y = 43350
+
 
     def get_data(self, **kwargs):
         line = None
@@ -418,7 +419,8 @@ class LondonBase(BaseAirPlot):
                 "transform": [
                     {
                         "type": "geopath", "projection": "mercator",
-                        "scale": self.scaling, "translate": [self.trans_x, self.trans_y]
+                        "scale": self.scaling,
+                        "translate": [self.trans_x, self.trans_y]
                     }
                 ]
             },
@@ -433,7 +435,8 @@ class LondonBase(BaseAirPlot):
                 "transform": [
                     {
                         "type": "geo", "projection": "mercator",
-                        "scale": self.scaling, "translate": [self.trans_x, self.trans_y],
+                        "scale": self.scaling,
+                        "translate": [self.trans_x, self.trans_y],
                         "lon": "longitude", "lat": "latitude"
                     },
                     {
@@ -469,12 +472,6 @@ class LondonBase(BaseAirPlot):
                 ]
             }
         ]
-
-
-class LondonMap(LondonBase):
-    scaling = 41000
-    trans_x = 480
-    trans_y = 43350
 
     def get_marks(self):
         return [
@@ -600,7 +597,7 @@ class LondonMap(LondonBase):
         ]
 
 
-class LondonForced(LondonBase):
+class LondonForced(BaseAirPlot):
     def get_data(self):
         url = url_for("forced_layout")
         return [
@@ -619,7 +616,7 @@ class LondonForced(LondonBase):
                 "format": {
                     "type": "json",
                     "parse": "auto",
-                    "property": "lines"
+                    "property": "edges"
                 },
                 "transform": [
                     {
@@ -757,7 +754,7 @@ class LondonForced(LondonBase):
         ]
 
 
-class RandomMap(LondonBase):
+class RandomMap(BaseAirPlot):
     def get_data(self):
         url = url_for("forced_layout")
         return [
