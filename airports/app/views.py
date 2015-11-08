@@ -248,7 +248,15 @@ def flights(departure_code=None, destination_code=None):
 @app.route('/stations', methods=['GET'])
 def stations():
     gr = utils.get_graph(session, key='underground')
-    return jsonify(stations=gr.get_current_nodes.values())
+    ngr = nx.convert_node_labels_to_integers(gr.graph)
+    nodes = []
+    for k, n in ngr.node.iteritems():
+        if n == {}:
+            continue
+        n.update({'id': k})
+        nodes.append(n)
+
+    return jsonify(stations=nodes)
 
 
 @app.route('/lines', methods=['GET'])
@@ -286,6 +294,7 @@ def forced_layout():
         nodes.append(n)
 
     edges = ngr.edges(data=True)
+
     data = []
     for edge in edges:
         if edge[0] in ngr.nodes() and edge[1] in ngr.nodes():
