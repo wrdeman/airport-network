@@ -3,7 +3,7 @@ from operator import itemgetter
 
 import networkx as nx
 
-from app.graph import Graph, Underground
+from app.graph import Graph, Random, Underground
 
 
 def get_graph(session, key='network'):
@@ -12,6 +12,8 @@ def get_graph(session, key='network'):
             gr = Graph()
         elif key == 'underground':
             gr = Underground()
+        elif key == 'random':
+            gr = Random()
         session[key] = gr
         return gr
     else:

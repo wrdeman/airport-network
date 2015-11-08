@@ -7,6 +7,7 @@ from operator import itemgetter
 import networkx as nx
 from config import get_network_data as get
 
+
 class Graph(object):
     def __init__(self):
         self.build_graph()
@@ -62,6 +63,11 @@ class Graph(object):
         Vmax = V.items()[0]
 
         return Vmax, V
+
+
+class Random(Graph):
+    def build_graph(self):
+        self.graph = nx.newman_watts_strogatz_graph(100, 2, 0.1)
 
 
 class Underground(Graph):

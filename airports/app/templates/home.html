@@ -1,59 +1,38 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <title></title>
-    <meta name="description" content="">
-
-    <link href="{{url_for('static', filename='select2/dist/css/select2.min.css')}}" rel="stylesheet" type="text/css" />
-    <link href="{{url_for('static', filename='airports/airports.css')}}" rel="stylesheet" type="text/css" />
-    <!-- <script src="https://code.jquery.com/jquery-1.9.1.min.js"></script> -->
-    <script src="{{url_for('static', filename='jquery/dist/jquery.min.js')}}"></script>
-    <script src="{{url_for('static', filename='underscore/underscore.js')}}"></script>
-    <script src="{{url_for('static', filename='backbone/backbone.js')}}"></script>
-    <script src="{{url_for('static', filename='select2/dist/js/select2.min.js')}}"></script>
-
-    <script src="http://vega.github.io/vega-editor/vendor/topojson.js" charset="utf-8"></script>
-    <script src="http://vega.github.io/vega-editor/vendor/d3.min.js" charset="utf-8"></script>
-    <script src="http://vega.github.io/vega-editor/vendor/d3.geo.projection.min.js" charset="utf-8"></script>
-    <script src="http://vega.github.io/vega-editor/vendor/d3.layout.cloud.js" charset="utf-8"></script>
-    <script src="http://vega.github.io/vega-editor/vendor/vega.js" charset="utf-8"></script>
-    <script src="http://vega.github.io/vega-editor/vendor/vega-embed.js" charset="utf-8"></script>
-
+{% extends "base.html" %}
+    {% block extra_js %}
     <script src="{{url_for('static', filename='airports/airports.js')}}"></script>
+    {% endblock %}
 
-  <script type="text/javascript">
-    $(document).ready(function(){
-    // var appView = new AppView();
+      {% block ready_js %}
+      $("#delete_airport").select2();
 
+      $("#delete_airport").on("change", function (e) {
+        $.ajax({
+          method: "DELETE",
+          url: "{{url_for('airports')}}"+"/"+$(this).val(),
+        }).done(function() {
+          location.reload();
+        });
+      });
 
-    $("#delete_airport").select2();
+      $("#restore_airports").on("click", function(e){
+        $.ajax({
+          method: "POST",
+          url: "{{url_for('airports')}}",
+        }).done(function() {
+          location.reload();
+        });
+      });
 
-    $("#delete_airport").on("change", function (e) {
-    $.ajax({
-      method: "DELETE",
-      url: "{{url_for('airports')}}"+"/"+$(this).val(),
-    }).done(function() {
-      location.reload();
-    });
+      vg.embed('#vis', url="{{url_for('map')}}", function(view, vega_spec) {
+      });
 
-    });
+      vg.embed('#vis1', url="{{url_for('histogram', network='network')}}", function(view, vega_spec) {
+      $(".vega-params").hide();
+      });
+    {% endblock %}
 
-    $("#restore_airports").on("click", function(e){
-    $.ajax({
-      method: "POST",
-      url: "{{url_for('airports')}}",
-    }).done(function() {
-      location.reload();
-    });
-    });
-
-    });
-  </script>
-
-
-  </head>
-  <body>
+    {% block content %}
     <div id="container"></div>
     <br>
     <br>
@@ -114,17 +93,4 @@
     </table>
 
     <div id="vis1"></div>
-
-  </body>
-
-  <script type="text/javascript">
-      vg.embed('#vis', url="{{url_for('map')}}", function(view, vega_spec) {
-      });
-
-      vg.embed('#vis1', url="{{url_for('histogram', network='network')}}", function(view, vega_spec) {
-      $(".vega-params").hide();
-      });
-  </script>
-
-
-</html>
+{% endblock %}

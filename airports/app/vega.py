@@ -755,3 +755,160 @@ class LondonForced(LondonBase):
                 ]
             }
         ]
+
+
+class RandomMap(LondonBase):
+    def get_data(self):
+        url = url_for("forced_layout")
+        return [
+            {
+                "name": "stations",
+                "url": url,
+                "format": {
+                    "type": "json",
+                    "parse": "auto",
+                    "property": "stations"
+                }
+            },
+            {
+                "name": "edges",
+                "url": url,
+                "format": {
+                    "type": "json",
+                    "parse": "auto",
+                    "property": "lines"
+                },
+                "transform": [
+                    {
+                        "type": "lookup",
+                        "on": "stations",
+                        "keys": ["source", "target"],
+                        "as": ["_source", "_target"]
+                    },
+                    {
+                        "type": "filter",
+                        "test": "datum._source && datum._target"
+                    }
+                ]
+
+            },
+            {
+                "name": "nodes",
+                "url": url,
+                "format": {
+                    "type": "json",
+                    "parse": "auto",
+                    "property": "stations"
+                },
+                "transform": [
+                    {
+                        "type": "force",
+                        "links": "edges",
+                        "linkDistance": 20,
+                        "linkStrength": 5,
+                        "charge": -200,
+                        "interactive": True
+                        }
+                ]
+            }
+        ]
+
+    def get_marks(self):
+        return [
+            {
+                "type": "path",
+                "from": {
+                    "data": "edges",
+                    "transform": [
+                        {
+                            "type": "lookup",
+                            "on": "nodes",
+                            "keys": ["source", "target"],
+                            "as":   ["_source", "_target"]
+                        },
+                        {
+                            "type": "linkpath",
+                            "shape": "line"
+                        }
+                    ]
+                },
+                "properties": {
+                    "update": {
+                        "path": {"field": "layout_path"},
+                        "stroke": {"value": "#000"},
+                        "strokeWidth": {"value": 1.5}
+                    }
+                }
+            },
+            {
+                "type": "symbol",
+                "from": {"data": "nodes"},
+                "properties": {
+                    "update": {
+                        "x": {"field": "layout_x"},
+                        "y": {"field": "layout_y"},
+                        "fill": {"value": "steelblue"}
+                    },
+                    "hover": {
+                        "fill": {"value": "#f00"}
+                    }
+                }
+            },
+            {
+                "type": "text",
+                "properties": {
+                    "enter": {
+                        "align": {"value": "center"},
+                        "fill": {"value": "#000"},
+                    },
+                    "update": {
+                        "x": {
+                            "signal": "tooltip.layout_x",
+                            "offset": 25
+                        },
+                        "y": {
+                            "signal": "tooltip.layout_y",
+                            "offset": -10
+                        },
+                        "text": {"signal": "tooltip.name"},
+                        "fillOpacity": {
+                            "rule": [
+                                {
+                                    "predicate": {
+                                        "name": "ifTooltip",
+                                        "id": {"value": None}
+                                    },
+                                    "value": 0
+                                },
+                                {"value": 1}
+                            ]
+                        }
+                    }
+                }
+            }
+
+        ]
+
+    def get_signals(self):
+        return [
+            {
+                "name": "tooltip",
+                "init": {},
+                "streams": [
+                    {"type": "symbol:mouseover", "expr": "datum"},
+                    {"type": "symbol:mouseout", "expr": "{}"}
+                ]
+            }
+        ]
+
+    def get_predicates(self):
+        return [
+            {
+                "name": "ifTooltip",
+                "type": "==",
+                "operands": [
+                    {"signal": "tooltip._id"},
+                    {"arg": "id"}
+                ]
+            }
+        ]

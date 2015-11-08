@@ -68,6 +68,31 @@ def london():
     )
 
 
+@app.route('/random')
+@app.route('/random/<random_type>')
+def random():
+    gr = utils.get_graph(session, key='random')
+    _, v = gr.vulnerability(limit=5)
+
+    degrees = utils.sort_degrees(
+        nx.degree_centrality(gr.graph), limit=5
+    )
+    try:
+        eigens = utils.sort_degrees(
+            nx.eigenvector_centrality(gr.graph), limit=5
+        )
+    except:
+        eigens = {}
+
+    return render_template(
+        'random.html',
+        nodes=gr.graph.edges(),
+        degrees=degrees,
+        eigens=eigens,
+        vulnerability=v
+    )
+
+
 # vega views
 @app.route('/map')
 @app.route('/map/<departure_code>/<destination_code>')
@@ -75,6 +100,14 @@ def map(departure_code=None, destination_code=None):
     return jsonify(
         **vega.BareMap().get_json(
             **{'src': departure_code, 'dst': destination_code}
+        )
+    )
+
+
+@app.route('/random_map')
+def random_map():
+    return jsonify(
+        **vega.RandomMap().get_json(
         )
     )
 
@@ -93,8 +126,10 @@ def histogram(network='network'):
 def london_map(line=None):
     gr = utils.get_graph(session, key='underground')
     lines = gr.tube_lines
-    if line not in lines:
+
+    if line and line not in lines:
         abort(404)
+
     return jsonify(
         **vega.LondonMap().get_json(**{'line': line})
     )
@@ -222,7 +257,6 @@ def stations():
 @app.route('/lines', methods=['GET'])
 @app.route('/lines/<line>', methods=['GET'])
 def lines(line=None):
-    session.clear()
     gr = utils.get_graph(session, key='underground')
 
     data = []
@@ -234,12 +268,17 @@ def lines(line=None):
                 'target': edge[1],
                 'line': edge[2]['line']
             })
-    return jsonify(lines=data)
+    try:
+        data = jsonify(lines=data)
+    except:
+        abort(404)
+
+    return data
 
 
 @app.route('/forced_layout', methods=['GET'])
 def forced_layout():
-    session.clear()
+
     gr = utils.get_graph(session, key='underground')
     all_stations = gr.station_data
 
