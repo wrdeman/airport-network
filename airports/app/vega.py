@@ -398,7 +398,6 @@ class LondonMap(BaseAirPlot):
     trans_x = 480
     trans_y = 43350
 
-
     def get_data(self, **kwargs):
         line = None
         if 'line' in kwargs:
@@ -445,32 +444,32 @@ class LondonMap(BaseAirPlot):
                     },
                 ]
             },
-            {
-                "name": "lines",
-                "url": line_url,
-                "format": {
-                    "type": "json",
-                    "parse": "auto",
-                    "property": "lines"
-                },
-                "transform": [
-                    {
-                        "type": "lookup",
-                        "on": "stations",
-                        "onKey": "name",
-                        "keys": ["source", "target"],
-                        "as": ["_source", "_target"]
-                    },
-                    {
-                        "type": "filter",
-                        "test": "datum._source && datum._target"
-                    },
-                    {
-                        "type": "linkpath",
-                        "shape": "line"
-                    }
-                ]
-            }
+            # {
+            #     "name": "lines",
+            #     "url": line_url,
+            #     "format": {
+            #         "type": "json",
+            #         "parse": "auto",
+            #         "property": "lines"
+            #     },
+            #     "transform": [
+            #         {
+            #             "type": "lookup",
+            #             "on": "stations",
+            #             "onKey": "id",
+            #             "keys": ["source", "target"],
+            #             "as": ["_source", "_target"]
+            #         },
+            #         {
+            #             "type": "filter",
+            #             "test": "datum._source && datum._target"
+            #         },
+            #         {
+            #             "type": "linkpath",
+            #             "shape": "line"
+            #         }
+            #     ]
+            # }
         ]
 
     def get_marks(self):
@@ -486,114 +485,114 @@ class LondonMap(BaseAirPlot):
                     }
                 }
             },
-            {
-                "type": "symbol",
-                "from": {"data": "stations"},
-                "properties": {
-                    "enter": {
-                        "x": {"field": "layout_x"},
-                        "y": {"field": "layout_y"},
-                        "size": {"value": 5},
-                        "fill": {"value": "steelblue"},
-                        "fillOpacity": {"value": 0.8},
-                        "stroke": {"value": "black"},
-                        "strokeWidth": {"value": 1.5}
-                    }
-                }
-            },
-            {
-                "type": "path",
-                "interactive": False,
-                "from": {"data": "lines"},
-                "properties": {
-                    "enter": {
-                        "path": {"field": "layout_path"},
-                        "stroke": {"scale": "color", "field": "line"},
-                        "strokeOpacity": {"value": 0.5},
-                        "strokeWidth": {"value": 4}
-                    }
-                }
-            },
-            {
-                "type": "text",
-                "properties": {
-                    "enter": {
-                        "align": {"value": "center"},
-                        "fill": {"value": "#000"},
-                    },
-                    "update": {
-                        "x": {
-                            "signal": "tooltip.layout_x",
-                            "offset": 25
-                        },
-                        "y": {
-                            "signal": "tooltip.layout_y",
-                            "offset": -10
-                        },
-                        "text": {"signal": "tooltip.name"},
-                        "fillOpacity": {
-                            "rule": [
-                                {
-                                    "predicate": {
-                                        "name": "ifTooltip",
-                                        "id": {"value": None}
-                                    },
-                                    "value": 0
-                                },
-                                {"value": 1}
-                            ]
-                        }
-                    }
-                }
-            }
+            # {
+            #     "type": "symbol",
+            #     "from": {"data": "stations"},
+            #     "properties": {
+            #         "enter": {
+            #             "x": {"field": "layout_x"},
+            #             "y": {"field": "layout_y"},
+            #             "size": {"value": 5},
+            #             "fill": {"value": "steelblue"},
+            #             "fillOpacity": {"value": 0.8},
+            #             "stroke": {"value": "black"},
+            #             "strokeWidth": {"value": 1.5}
+            #         }
+            #     }
+            # },
+            # {
+            #     "type": "path",
+            #     "interactive": False,
+            #     "from": {"data": "lines"},
+            #     "properties": {
+            #         "enter": {
+            #             "path": {"field": "layout_path"},
+            #             "stroke": {"scale": "color", "field": "line"},
+            #             "strokeOpacity": {"value": 0.5},
+            #             "strokeWidth": {"value": 4}
+            #         }
+            #     }
+            # },
+            # {
+            #     "type": "text",
+            #     "properties": {
+            #         "enter": {
+            #             "align": {"value": "center"},
+            #             "fill": {"value": "#000"},
+            #         },
+            #         "update": {
+            #             "x": {
+            #                 "signal": "tooltip.layout_x",
+            #                 "offset": 25
+            #             },
+            #             "y": {
+            #                 "signal": "tooltip.layout_y",
+            #                 "offset": -10
+            #             },
+            #             "text": {"signal": "tooltip.name"},
+            #             "fillOpacity": {
+            #                 "rule": [
+            #                     {
+            #                         "predicate": {
+            #                             "name": "ifTooltip",
+            #                             "id": {"value": None}
+            #                         },
+            #                         "value": 0
+            #                     },
+            #                     {"value": 1}
+            #                 ]
+            #             }
+            #         }
+            #     }
+            # }
         ]
 
     def get_scales(self):
         return [
-            {
-                "name": "color",
-                "type": "ordinal",
-                "domain": {"data": "lines", "field": "line"},
-                "range": "category10"
-            },
-            {
-                "name": "xscale",
-                "range": "width",
-                "domain": {
-                    "data": "stations", "field": "layout_x"
-                }
-            },
-            {
-                "name": "yscale",
-                "range": "height",
-                "domain": {
-                    "data": "stations", "field": "layout_y"
-                }
-            }
+            # {
+            #     "name": "color",
+            #     "type": "ordinal",
+            #     "domain": {"data": "lines", "field": "line"},
+            #     "range": "category10"
+            # },
+            # {
+            #     "name": "xscale",
+            #     "range": "width",
+            #     "domain": {
+            #         "data": "stations", "field": "layout_x"
+            #     }
+            # },
+            # {
+            #     "name": "yscale",
+            #     "range": "height",
+            #     "domain": {
+            #         "data": "stations", "field": "layout_y"
+            #     }
+            # }
         ]
 
     def get_signals(self):
         return [
-            {
-                "name": "tooltip",
-                "init": {},
-                "streams": [
-                    {"type": "symbol:mouseover", "expr": "datum"},
-                    {"type": "symbol:mouseout", "expr": "{}"}
-                ]
-            }
+            # {
+            #     "name": "tooltip",
+            #     "init": {},
+            #     "streams": [
+            #         {"type": "symbol:mouseover", "expr": "datum"},
+            #         {"type": "symbol:mouseout", "expr": "{}"}
+            #     ]
+            # }
         ]
 
     def get_predicates(self):
         return [
-            {
-                "name": "ifTooltip",
-                "type": "==",
-                "operands": [
-                    {"signal": "tooltip._id"},
-                    {"arg": "id"}
-                ]
-            }
+            # {
+            #     "name": "ifTooltip",
+            #     "type": "==",
+            #     "operands": [
+            #         {"signal": "tooltip._id"},
+            #         {"arg": "id"}
+            #     ]
+            # }
         ]
 
 

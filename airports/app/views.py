@@ -248,15 +248,16 @@ def flights(departure_code=None, destination_code=None):
 @app.route('/stations', methods=['GET'])
 def stations():
     gr = utils.get_graph(session, key='underground')
-    ngr = nx.convert_node_labels_to_integers(gr.graph)
-    nodes = []
-    for k, n in ngr.node.iteritems():
-        if n == {}:
-            continue
-        n.update({'id': k})
-        nodes.append(n)
+    n = [
+        {
+            'name': node['name'],
+            'longitude': node['longitude'],
+            'latitude': node['latitude']
+        }
+        for node in gr.get_current_nodes
+    ]
 
-    return jsonify(stations=nodes)
+    return jsonify(stations=n)
 
 
 @app.route('/lines', methods=['GET'])
@@ -285,25 +286,18 @@ def lines(line=None):
 def forced_layout():
     gr = utils.get_graph(session, key='underground')
 
-    ngr = nx.convert_node_labels_to_integers(gr.graph)
-    nodes = []
-    for k, n in ngr.node.iteritems():
-        if n == {}:
-            continue
-        n.update({'id': k})
-        nodes.append(n)
-
-    edges = ngr.edges(data=True)
+    edges = gr.graph.edges(data=True)
 
     data = []
     for edge in edges:
-        if edge[0] in ngr.nodes() and edge[1] in ngr.nodes():
+        if edge[0] in gr.graph.nodes() and edge[1] in gr.graph.nodes():
             data.append({
                 'source': edge[0],
                 'target': edge[1],
                 'data': {'line': edge[2]['line']}
             })
-    return jsonify(nodes=nodes, edges=data)
+
+    return jsonify(nodes=gr.get_current_nodes, edges=data)
 
 
 @app.route('/degree/<plot_type>/<network>')

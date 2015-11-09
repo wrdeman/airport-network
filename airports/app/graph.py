@@ -106,6 +106,14 @@ class Underground(BaseGraph):
                     latitude=station["coordinates"][1]
                 )
 
+        ngr = nx.convert_node_labels_to_integers(self.graph)
+        for k, node in ngr.node.iteritems():
+            ngr.add_node(
+                k,
+                id=k
+            )
+        self.graph = ngr
+
     @property
     def get_current_lines(self):
         return list(
@@ -113,3 +121,11 @@ class Underground(BaseGraph):
                 nx.get_edge_attributes(self.graph, 'line').values()
             )
         )
+
+    @property
+    def get_current_nodes(self):
+        return [
+            node[1]
+            for node in self.graph.nodes(data=True)
+            if 'name' in node[1]
+        ]
