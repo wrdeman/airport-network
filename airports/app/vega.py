@@ -411,18 +411,18 @@ class LondonMap(BaseAirPlot):
             )
 
         return [
-            # {
-            #     "name": "boroughs",
-            #     "url": "static/airports/london_boroughs.json",
-            #     "format": {"type": "topojson", "feature": "london"},
-            #     "transform": [
-            #         {
-            #             "type": "geopath", "projection": "mercator",
-            #             "scale": self.scaling,
-            #             "translate": [self.trans_x, self.trans_y]
-            #         }
-            #     ]
-            # },
+            {
+                "name": "boroughs",
+                "url": "static/airports/london_boroughs.json",
+                "format": {"type": "topojson", "feature": "london"},
+                "transform": [
+                    {
+                        "type": "geopath", "projection": "mercator",
+                        "scale": self.scaling,
+                        "translate": [self.trans_x, self.trans_y]
+                    }
+                ]
+            },
             {
                 "name": "stations",
                 "url": url_for("stations"),
@@ -472,17 +472,17 @@ class LondonMap(BaseAirPlot):
 
     def get_marks(self):
         return [
-            # {
-            #     "type": "path",
-            #     "from": {"data": "boroughs"},
-            #     "properties": {
-            #         "enter": {
-            #             "path": {"field": "layout_path"},
-            #             "fill": {"value": "#43484A"},
-            #             "stroke": {"value": "white"}
-            #         }
-            #     }
-            # },
+            {
+                "type": "path",
+                "from": {"data": "boroughs"},
+                "properties": {
+                    "enter": {
+                        "path": {"field": "layout_path"},
+                        "fill": {"value": "#43484A"},
+                        "stroke": {"value": "white"}
+                    }
+                }
+            },
             {
                 "type": "symbol",
                 "from": {"data": "stations"},
