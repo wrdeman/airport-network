@@ -248,16 +248,7 @@ def flights(departure_code=None, destination_code=None):
 @app.route('/stations', methods=['GET'])
 def stations():
     gr = utils.get_graph(session, key='underground')
-    n = [
-        {
-            'name': node['name'],
-            'longitude': node['longitude'],
-            'latitude': node['latitude']
-        }
-        for node in gr.get_current_nodes
-    ]
-
-    return jsonify(stations=n)
+    return jsonify(stations=gr.get_current_nodes)
 
 
 @app.route('/lines', methods=['GET'])
