@@ -745,7 +745,7 @@ class LondonForced(BaseAirPlot):
                 "type": "==",
                 "operands": [
                     {"signal": "tooltip._id"},
-                    {"arg": "id"}
+                    {"arg": "_id"}
                 ]
             }
         ]
