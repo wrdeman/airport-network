@@ -17,6 +17,13 @@ bower_path: /home/vagrant/app/.bowerrc
 website_gunicorn_bin_path: /home/vagrant/venv/site/bin/gunicorn
 website_gunicorn_conf_path: /home/vagrant/gunicorn.conf.py
 
+#dev requirements
+dev_requirements_path: /home/vagrant/app/dev_requirements.txt
+
+# wdb path
+wdb_path: /home/vagrant/venv/site/bin/
+
+
 # jenkins cli
 jenkins_cli: /home/vagrant/
 jenkins_conf: /home/vagrant/app/jenkins

@@ -454,7 +454,7 @@ class LondonMap(BaseAirPlot):
                     {
                         "type": "lookup",
                         "on": "stations",
-                        "onKey": "id",
+                        "onKey": "nodeID",
                         "keys": ["source", "target"],
                         "as": ["_source", "_target"]
                     },
@@ -599,15 +599,6 @@ class LondonForced(BaseAirPlot):
         url = url_for("forced_layout")
         return [
             {
-                "name": "stations",
-                "url": url,
-                "format": {
-                    "type": "json",
-                    "parse": "auto",
-                    "property": "nodes"
-                }
-            },
-            {
                 "name": "edges",
                 "url": url,
                 "format": {
@@ -617,14 +608,8 @@ class LondonForced(BaseAirPlot):
                 },
                 "transform": [
                     {
-                        "type": "lookup",
-                        "on": "stations",
-                        "keys": ["source", "target"],
-                        "as": ["_source", "_target"]
-                    },
-                    {
                         "type": "filter",
-                        "test": "datum._source && datum._target"
+                        "test": "datum.source && datum.target"
                     }
                 ]
 
@@ -645,7 +630,7 @@ class LondonForced(BaseAirPlot):
                         "linkStrength": 5,
                         "charge": -200,
                         "interactive": True
-                        }
+                    }
                 ]
             }
         ]
@@ -658,10 +643,15 @@ class LondonForced(BaseAirPlot):
                     "data": "edges",
                     "transform": [
                         {
+                            "type": "filter",
+                            "test": "datum.source && datum.target"
+                        },
+                        {
                             "type": "lookup",
                             "on": "nodes",
+                            "onKey": "nodeID",
                             "keys": ["source", "target"],
-                            "as":   ["_source", "_target"]
+                            "as": ["_source", "_target"],
                         },
                         {
                             "type": "linkpath",
@@ -745,7 +735,7 @@ class LondonForced(BaseAirPlot):
                 "type": "==",
                 "operands": [
                     {"signal": "tooltip._id"},
-                    {"arg": "_id"}
+                    {"arg": "id"}
                 ]
             }
         ]
@@ -779,10 +769,10 @@ class RandomMap(BaseAirPlot):
                         "keys": ["source", "target"],
                         "as": ["_source", "_target"]
                     },
-                    {
-                        "type": "filter",
-                        "test": "datum._source && datum._target"
-                    }
+                    # {
+                    #     "type": "filter",
+                    #     "test": "datum._source && datum._target"
+                    # }
                 ]
 
             },

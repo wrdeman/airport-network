@@ -20,7 +20,6 @@ from app import app, utils, vega
 def index():
     gr = utils.get_graph(session)
     _, v = gr.vulnerability(limit=5)
-
     degrees = utils.sort_degrees(
         nx.degree_centrality(gr.graph), limit=5
     )
@@ -276,19 +275,24 @@ def lines(line=None):
 @app.route('/forced_layout', methods=['GET'])
 def forced_layout():
     gr = utils.get_graph(session, key='underground')
-
     edges = gr.graph.edges(data=True)
 
-    data = []
-    for edge in edges:
-        if edge[0] in gr.graph.nodes() and edge[1] in gr.graph.nodes():
-            data.append({
-                'source': edge[0],
-                'target': edge[1],
-                'data': {'line': edge[2]['line']}
-            })
+    data_edges = []
+    data_nodes = []
+    edge_ids = []
 
-    return jsonify(nodes=gr.get_current_nodes, edges=data)
+    for edge in edges:
+        data_edges.append({
+            'source': edge[0],
+            'target': edge[1],
+            'data': {'line': edge[2]['line']}
+        })
+        edge_ids.extend([edge[0], edge[1]])
+    edge_ids = sorted(list(set(edge_ids)))
+    for eid in edge_ids:
+        data_nodes.append(gr.graph.node[eid])
+
+    return jsonify(nodes=data_nodes, edges=data_edges)
 
 
 @app.route('/degree/<plot_type>/<network>')
@@ -317,7 +321,8 @@ def degree(plot_type=None, network='network'):
         y = inter + (grad * np.log(x))
 
         data = [
-            {"x": datum[0], "y": datum[1]}
-            for datum in zip(x, np.exp(y))
+            {"x": datum[0], "y": np.exp(datum[1])}
+            for datum in zip(x, y)
+            if not np.isnan(np.exp(datum[1]))
         ]
         return jsonify(bestfit=data)

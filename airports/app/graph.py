@@ -1,6 +1,6 @@
 import csv
 import json
-
+from itertools import chain
 from collections import OrderedDict
 from operator import itemgetter
 
@@ -99,18 +99,24 @@ class Underground(BaseGraph):
         with open(get('stations')) as fs:
             stations = json.load(fs)
             for station in stations:
-                self.graph.add_node(
-                    station['name'],
-                    name=station["name"],
-                    longitude=station["coordinates"][0],
-                    latitude=station["coordinates"][1]
-                )
+                # ignore unnconnect stations
+                if station['name'] in list(
+                        chain.from_iterable(self.graph.edges())
+                ):
+                    self.graph.add_node(
+                        station['name'],
+                        name=station["name"],
+                        longitude=station["coordinates"][0],
+                        latitude=station["coordinates"][1]
+                    )
 
-        ngr = nx.convert_node_labels_to_integers(self.graph)
+        ngr = nx.convert_node_labels_to_integers(
+            self.graph, first_label=0
+        )
         for k, node in ngr.node.iteritems():
             ngr.add_node(
                 k,
-                id=k
+                nodeID=k
             )
         self.graph = ngr
 
