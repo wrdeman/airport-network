@@ -9,6 +9,8 @@ from config import get_network_data as get
 
 
 class BaseGraph(object):
+    d3 = False
+
     def __init__(self):
         self.build_graph()
 
@@ -51,6 +53,41 @@ class BaseGraph(object):
         for node in sorted(self.graph.node, key=itemgetter(0)):
             node_list[node] = self.graph.node[node]
         return node_list
+
+    def node_labels_to_ints(self):
+        ngr = nx.convert_node_labels_to_integers(
+            self.graph, first_label=0
+        )
+        for k, node in ngr.node.iteritems():
+            ngr.add_node(
+                k,
+                nodeID=k
+            )
+        self.d3 = True
+        self.graph = ngr
+
+    def d3_forced_layout(self, data):
+        """ extra data is a list of data keys
+        """
+        if not self.d3:
+            raise NotImplementedError
+
+        edges = []
+        nodes = []
+        edge_ids = []
+
+        for edge in self.graph.edges(data=True):
+            extra = {datum: edge[2][datum] for datum in data}
+            edges.append({
+                'source': edge[0],
+                'target': edge[1],
+                'data': extra
+            })
+            edge_ids.extend([edge[0], edge[1]])
+        edge_ids = sorted(list(set(edge_ids)))
+        for edge_id in edge_ids:
+            nodes.append(self.graph.node[edge_id])
+        return edges, nodes
 
 
 class Graph(BaseGraph):
@@ -109,16 +146,7 @@ class Underground(BaseGraph):
                         longitude=station["coordinates"][0],
                         latitude=station["coordinates"][1]
                     )
-
-        ngr = nx.convert_node_labels_to_integers(
-            self.graph, first_label=0
-        )
-        for k, node in ngr.node.iteritems():
-            ngr.add_node(
-                k,
-                nodeID=k
-            )
-        self.graph = ngr
+        self.node_labels_to_ints()
 
     @property
     def get_current_lines(self):

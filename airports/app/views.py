@@ -275,24 +275,10 @@ def lines(line=None):
 @app.route('/forced_layout', methods=['GET'])
 def forced_layout():
     gr = utils.get_graph(session, key='underground')
-    edges = gr.graph.edges(data=True)
 
-    data_edges = []
-    data_nodes = []
-    edge_ids = []
+    edges, nodes = gr.d3_forced_layout(['line'])
 
-    for edge in edges:
-        data_edges.append({
-            'source': edge[0],
-            'target': edge[1],
-            'data': {'line': edge[2]['line']}
-        })
-        edge_ids.extend([edge[0], edge[1]])
-    edge_ids = sorted(list(set(edge_ids)))
-    for eid in edge_ids:
-        data_nodes.append(gr.graph.node[eid])
-
-    return jsonify(nodes=data_nodes, edges=data_edges)
+    return jsonify(nodes=nodes, edges=edges)
 
 
 @app.route('/degree/<plot_type>/<network>')
