@@ -55,9 +55,9 @@ class BaseGraph(object):
                 V.iteritems(), key=itemgetter(1), reverse=False
             )[0:limit]
         )
-        Vmax = V.items()[0]
+        Vmin = V.items()[0]
 
-        return Vmax, V
+        return Vmin, V
 
     @property
     def get_current_nodes(self):
@@ -78,7 +78,7 @@ class BaseGraph(object):
         self.d3 = True
         self.graph = ngr
 
-    def d3_forced_layout(self, data):
+    def d3_forced_layout(self, data=[]):
         """ extra data is a list of data keys
         """
         if not self.d3:
