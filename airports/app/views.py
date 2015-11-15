@@ -1,5 +1,6 @@
 from collections import Counter
-
+import urllib
+import urlparse
 from flask import (
     abort,
     jsonify,
@@ -52,6 +53,7 @@ def route():
 def london():
     gr = utils.get_graph(session, key='underground')
     _, v = gr.vulnerability(limit=5)
+    forced_list = ','.join(['line'])
 
     return render_template(
         'london.html',
@@ -60,7 +62,8 @@ def london():
         degrees=utils.sort_degrees(
             nx.degree_centrality(gr.graph), limit=5
         ),
-        vulnerability=v
+        vulnerability=v,
+        force=urllib.urlencode({'params': forced_list})
     )
 
 
@@ -85,7 +88,7 @@ def random():
         nodes=gr.graph.edges(),
         degrees=degrees,
         eigens=eigens,
-        vulnerability=v
+        vulnerability=v,
     )
 
 
@@ -100,17 +103,9 @@ def map(departure_code=None, destination_code=None):
     )
 
 
-@app.route('/random_map')
-def random_map():
-    return jsonify(
-        **vega.RandomMap().get_json(
-        )
-    )
-
-
 @app.route('/histogram/<network>')
-def histogram(network='network'):
-    if network not in ['network', 'underground']:
+def histogram(network=None):
+    if not network:
         abort(404)
     return jsonify(
         **vega.Scatter().get_json(**{'network': network})
@@ -131,10 +126,21 @@ def london_map(line=None):
     )
 
 
-@app.route('/london_forced')
-def london_forced():
+@app.route('/forced/<network>')
+def forced(network=None):
+    if not network:
+        abort(404)
+
+    params = request.args.get('params')
+
     return jsonify(
-        **vega.LondonForced().get_json()
+        **vega.LondonForced().get_json(
+            **{
+                'url': 'forcedlayout',
+                'network': network,
+                'params': params
+            }
+        )
     )
 
 
@@ -272,22 +278,30 @@ def lines(line=None):
     return data
 
 
-@app.route('/forced_layout', methods=['GET'])
-def forced_layout():
-    gr = utils.get_graph(session, key='underground')
+@app.route('/forcedlayout/<network>', methods=['GET'])
+def forcedlayout(network=None):
+    if not network:
+        abort(404)
+    params = request.args.get('params')
+    if not params:
+        params = []
+    else:
+        params = urlparse.parse_qs(params)['params'][0].split(',')
 
-    edges, nodes = gr.d3_forced_layout(['line'])
+    gr = utils.get_graph(session, key=network)
+
+    edges, nodes = gr.d3_forced_layout(params)
 
     return jsonify(nodes=nodes, edges=edges)
 
 
 @app.route('/degree/<plot_type>/<network>')
-def degree(plot_type=None, network='network'):
+def degree(plot_type=None, network=None):
     if not plot_type:
         abort(404)
     if plot_type not in ['scatter', 'powerlaw']:
         abort(404)
-    if network not in ['network', 'underground']:
+    if not network:
         abort(404)
 
     gr = utils.get_graph(session, key=network)

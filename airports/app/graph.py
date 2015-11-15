@@ -1,11 +1,23 @@
 import csv
+import itertools
 import json
+
+import math
+import random
+
 from itertools import chain
 from collections import OrderedDict
 from operator import itemgetter
 
 import networkx as nx
 from config import get_network_data as get
+
+
+def pairwise(iterable):
+    "s -> (s0,s1), (s1,s2), (s2, s3), ..."
+    a, b = itertools.tee(iterable)
+    next(b, None)
+    return itertools.izip(a, b)
 
 
 class BaseGraph(object):
@@ -122,7 +134,51 @@ class Graph(BaseGraph):
 
 class Random(BaseGraph):
     def build_graph(self):
-        self.graph = nx.newman_watts_strogatz_graph(100, 2, 0.1)
+        self.graph = nx.random_partition_graph([10, 10], 0, 1)
+        self.node_labels_to_ints()
+
+
+class N_degree_partition(BaseGraph):
+    prune = True
+    p = 0.1
+    nodes = [50, 50, 50]
+    colour = True
+
+    def colour(self):
+        for i, part in enumerate(self.graph.graph['partition']):
+            for node in part:
+                try:
+                    self.graph.node[node]['colour'] = i
+                except:
+                    pass
+
+    def build_graph(self):
+        # make a partite network
+        self.graph = nx.random_partition_graph(self.nodes, 0, 0)
+
+        if self.p == 0:
+            return
+        lp = math.log(self.p)
+
+        for p1, p2 in pairwise(self.graph.graph['partition']):
+            p1 = sorted(p1)
+            p2 = sorted(p2)
+            for i in p1:
+                for j in p2:
+                    if int(self.p) == 1:
+                        self.graph.add_edge(i, j)
+                        continue
+                    lr = math.log(1.0 - random.random())
+                    if lr/lp >= 1:
+                        self.graph.add_edge(i, j)
+
+        # prune unnconnected nodes
+        if self.prune:
+            for node in self.graph.nodes():
+                if nx.is_isolate(self.graph, node):
+                    self.graph.remove_node(node)
+        self.node_labels_to_ints()
+        self.colour()
 
 
 class Underground(BaseGraph):
@@ -144,7 +200,8 @@ class Underground(BaseGraph):
                         station['name'],
                         name=station["name"],
                         longitude=station["coordinates"][0],
-                        latitude=station["coordinates"][1]
+                        latitude=station["coordinates"][1],
+                        colour=0
                     )
         self.node_labels_to_ints()
 

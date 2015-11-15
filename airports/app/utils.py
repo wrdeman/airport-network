@@ -2,7 +2,7 @@ from collections import OrderedDict
 from operator import itemgetter
 
 from app import app
-from app.graph import Graph, Random, Underground
+from app.graph import Graph, N_degree_partition, Underground
 
 
 def get_graph(session, key='network'):
@@ -12,7 +12,7 @@ def get_graph(session, key='network'):
         elif key == 'underground':
             gr = Underground()
         elif key == 'random':
-            gr = Random()
+            gr = N_degree_partition()
         session[key] = gr
         return gr
     else:

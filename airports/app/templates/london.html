@@ -19,7 +19,7 @@
         var url="{{url_for('london_map')}}";
     }
 
-    var url_forced="{{url_for('london_forced')}}";
+    var url_forced="{{url_for('forced', network='underground', params=force)}}";
 
     vg.embed('#vis', url=url, function(view, vega_spec) {
       $(".vega-params").hide();
