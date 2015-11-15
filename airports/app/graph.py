@@ -35,7 +35,8 @@ class BaseGraph(object):
         norm = 1./(N * (N - 1))
 
         nodes = nx.shortest_path_length(self.graph)
-        for node, paths in nodes.iteritems():
+
+        for node, paths in nodes:
             E[node] = sum(
                 [1./v for k, v in paths.iteritems() if k != node]
             )*norm

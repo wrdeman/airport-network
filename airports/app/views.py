@@ -98,7 +98,7 @@ def random():
 
     return render_template(
         'random.html',
-        nodes=gr.graph.edges(),
+        nodes=list(gr.graph.edges()),
         degrees=degrees,
         eigens=eigens,
         vulnerability=v,
@@ -318,7 +318,7 @@ def degree(plot_type=None, network=None):
         abort(404)
 
     gr = utils.get_graph(session, key=network)
-    data = Counter(nx.degree(gr.graph).values())
+    data = Counter(dict(nx.degree(gr.graph)).values())
     if plot_type == 'scatter':
         data = [
             {"x": int(k), "y": int(v)}
