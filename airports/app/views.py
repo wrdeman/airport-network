@@ -118,7 +118,7 @@ def map(departure_code=None, destination_code=None):
 
 @app.route('/histogram/<network>')
 def histogram(network=None):
-    if not network:
+    if not network_test(network):
         abort(404)
     return jsonify(
         **vega.Scatter().get_json(**{'network': network})
