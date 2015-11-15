@@ -10,7 +10,6 @@ class BaseAirPlot(object):
 
     def get_json(self, **kwargs):
         spec = OrderedDict()
-
         spec['width'] = self.width
         spec['height'] = self.height
         spec['padding'] = self.padding
@@ -393,10 +392,10 @@ class BareMap(BaseAirPlot):
         ]
 
 
-class LondonBase(BaseAirPlot):
-    scaling = 1
-    trans_x = 0
-    trans_y = 0
+class LondonMap(BaseAirPlot):
+    scaling = 41000
+    trans_x = 480
+    trans_y = 43350
 
     def get_data(self, **kwargs):
         line = None
@@ -418,7 +417,8 @@ class LondonBase(BaseAirPlot):
                 "transform": [
                     {
                         "type": "geopath", "projection": "mercator",
-                        "scale": self.scaling, "translate": [self.trans_x, self.trans_y]
+                        "scale": self.scaling,
+                        "translate": [self.trans_x, self.trans_y]
                     }
                 ]
             },
@@ -426,14 +426,13 @@ class LondonBase(BaseAirPlot):
                 "name": "stations",
                 "url": url_for("stations"),
                 "format": {
-                    "type": "json",
-                    "parse": "auto",
                     "property": "stations"
                 },
                 "transform": [
                     {
                         "type": "geo", "projection": "mercator",
-                        "scale": self.scaling, "translate": [self.trans_x, self.trans_y],
+                        "scale": self.scaling,
+                        "translate": [self.trans_x, self.trans_y],
                         "lon": "longitude", "lat": "latitude"
                     },
                     {
@@ -454,7 +453,7 @@ class LondonBase(BaseAirPlot):
                     {
                         "type": "lookup",
                         "on": "stations",
-                        "onKey": "name",
+                        "onKey": "nodeID",
                         "keys": ["source", "target"],
                         "as": ["_source", "_target"]
                     },
@@ -469,12 +468,6 @@ class LondonBase(BaseAirPlot):
                 ]
             }
         ]
-
-
-class LondonMap(LondonBase):
-    scaling = 41000
-    trans_x = 480
-    trans_y = 43350
 
     def get_marks(self):
         return [
@@ -600,37 +593,32 @@ class LondonMap(LondonBase):
         ]
 
 
-class LondonForced(LondonBase):
-    def get_data(self):
-        url = url_for("forced_layout")
+class LondonForced(BaseAirPlot):
+    def get_data(self, **kwargs):
+        if 'url' in kwargs:
+            url = url_for(kwargs['url'], network=kwargs['network'])
+            if 'params' in kwargs:
+                url = url_for(
+                    kwargs['url'],
+                    network=kwargs['network'],
+                    params=kwargs['params']
+                )
+        else:
+            raise NotImplementedError
+
         return [
-            {
-                "name": "stations",
-                "url": url,
-                "format": {
-                    "type": "json",
-                    "parse": "auto",
-                    "property": "stations"
-                }
-            },
             {
                 "name": "edges",
                 "url": url,
                 "format": {
                     "type": "json",
                     "parse": "auto",
-                    "property": "lines"
+                    "property": "edges"
                 },
                 "transform": [
                     {
-                        "type": "lookup",
-                        "on": "stations",
-                        "keys": ["source", "target"],
-                        "as": ["_source", "_target"]
-                    },
-                    {
                         "type": "filter",
-                        "test": "datum._source && datum._target"
+                        "test": "datum.source && datum.target"
                     }
                 ]
 
@@ -641,18 +629,28 @@ class LondonForced(LondonBase):
                 "format": {
                     "type": "json",
                     "parse": "auto",
-                    "property": "stations"
+                    "property": "nodes"
                 },
                 "transform": [
                     {
                         "type": "force",
                         "links": "edges",
-                        "linkDistance": 20,
+                        "linkDistance": 100,
                         "linkStrength": 5,
-                        "charge": -200,
+                        "charge": -700,
                         "interactive": True
-                        }
+                    }
                 ]
+            }
+        ]
+
+    def get_scales(self):
+        return [
+            {
+                "name": "colour",
+                "type": "ordinal",
+                # "domain": {"data": "nodes", "field": "colour"},
+                "range": "category10"
             }
         ]
 
@@ -664,10 +662,15 @@ class LondonForced(LondonBase):
                     "data": "edges",
                     "transform": [
                         {
+                            "type": "filter",
+                            "test": "datum.source && datum.target"
+                        },
+                        {
                             "type": "lookup",
                             "on": "nodes",
+                            "onKey": "nodeID",
                             "keys": ["source", "target"],
-                            "as":   ["_source", "_target"]
+                            "as": ["_source", "_target"],
                         },
                         {
                             "type": "linkpath",
@@ -690,7 +693,10 @@ class LondonForced(LondonBase):
                     "update": {
                         "x": {"field": "layout_x"},
                         "y": {"field": "layout_y"},
-                        "fill": {"value": "steelblue"}
+                        "fill": {
+                            "scale": "colour",
+                            "field": "colour"
+                        }
                     },
                     "hover": {
                         "fill": {"value": "#f00"}

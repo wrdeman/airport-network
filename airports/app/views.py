@@ -1,5 +1,6 @@
 from collections import Counter
-
+import urllib
+import urlparse
 from flask import (
     abort,
     jsonify,
@@ -12,7 +13,20 @@ from flask import (
 import networkx as nx
 import numpy as np
 
-from app import app, utils, vega
+from app import app, nav, utils, vega
+
+
+nav.Bar('top', [
+    nav.Item('Airports', 'index'),
+    nav.Item('Underground', 'london'),
+    nav.Item('Random', 'random')
+])
+
+
+def network_test(network):
+    if network in ['network', 'underground', 'random']:
+        return True
+    return False
 
 
 @app.route('/')
@@ -20,8 +34,6 @@ from app import app, utils, vega
 def index():
     gr = utils.get_graph(session)
     _, v = gr.vulnerability(limit=5)
-    airport_list = utils.get_current_airports(session)
-
     degrees = utils.sort_degrees(
         nx.degree_centrality(gr.graph), limit=5
     )
@@ -34,7 +46,7 @@ def index():
 
     return render_template(
         'home.html',
-        airports=airport_list,
+        airports=gr.get_current_nodes,
         degrees=degrees,
         eigens=eigens,
         vulnerability=v
@@ -43,10 +55,10 @@ def index():
 
 @app.route('/route')
 def route():
-    airport_list = utils.get_current_airports(session)
+    gr = utils.get_graph(session)
     return render_template(
         'route.html',
-        airports=airport_list,
+        airports=gr.get_current_nodes,
     )
 
 
@@ -54,17 +66,42 @@ def route():
 def london():
     gr = utils.get_graph(session, key='underground')
     _, v = gr.vulnerability(limit=5)
+    forced_list = ','.join(['line'])
 
-    stations = gr.station_data
-    lines = gr.tube_lines
     return render_template(
         'london.html',
-        stations=stations,
-        lines=lines,
+        stations=gr.get_current_nodes,
+        lines=gr.get_current_lines,
         degrees=utils.sort_degrees(
             nx.degree_centrality(gr.graph), limit=5
         ),
-        vulnerability=v
+        vulnerability=v,
+        force=urllib.urlencode({'params': forced_list})
+    )
+
+
+@app.route('/random')
+@app.route('/random/<random_type>')
+def random():
+    gr = utils.get_graph(session, key='random')
+    _, v = gr.vulnerability(limit=5)
+
+    degrees = utils.sort_degrees(
+        nx.degree_centrality(gr.graph), limit=5
+    )
+    try:
+        eigens = utils.sort_degrees(
+            nx.eigenvector_centrality(gr.graph), limit=5
+        )
+    except:
+        eigens = {}
+
+    return render_template(
+        'random.html',
+        nodes=gr.graph.edges(),
+        degrees=degrees,
+        eigens=eigens,
+        vulnerability=v,
     )
 
 
@@ -80,8 +117,8 @@ def map(departure_code=None, destination_code=None):
 
 
 @app.route('/histogram/<network>')
-def histogram(network='network'):
-    if network not in ['network', 'underground']:
+def histogram(network=None):
+    if not network_test(network):
         abort(404)
     return jsonify(
         **vega.Scatter().get_json(**{'network': network})
@@ -92,18 +129,31 @@ def histogram(network='network'):
 @app.route('/london_map/<line>')
 def london_map(line=None):
     gr = utils.get_graph(session, key='underground')
-    lines = gr.tube_lines
-    if line not in lines:
+    lines = gr.get_current_lines
+
+    if line and line not in lines:
         abort(404)
+
     return jsonify(
         **vega.LondonMap().get_json(**{'line': line})
     )
 
 
-@app.route('/london_forced')
-def london_forced():
+@app.route('/forced/<network>')
+def forced(network=None):
+    if not network:
+        abort(404)
+
+    params = request.args.get('params')
+
     return jsonify(
-        **vega.LondonForced().get_json()
+        **vega.LondonForced().get_json(
+            **{
+                'url': 'forcedlayout',
+                'network': network,
+                'params': params
+            }
+        )
     )
 
 
@@ -116,7 +166,7 @@ def airports(airport_code=None):
     gr = utils.get_graph(session)
     if request.method == 'GET':
         if airport_code:
-            data = gr.airport_data.get(airport_code) or None
+            data = gr.get_current_nodes.get(airport_code) or None
             if data:
                 data['degree'] = nx.degree_centrality(
                     gr.graph
@@ -133,7 +183,7 @@ def airports(airport_code=None):
             else:
                 abort(404)
         else:
-            return jsonify(airport_data=gr.airport_data.values())
+            return jsonify(airport_data=gr.get_current_nodes.values())
 
     elif request.method == 'DELETE':
         if airport_code:
@@ -157,7 +207,7 @@ def airports(airport_code=None):
 @app.route('/flights/<departure_code>/<destination_code>')
 def flights(departure_code=None, destination_code=None):
     gr = utils.get_graph(session)
-    airports = gr.airport_data.keys()
+    airports = gr.get_current_nodes.keys()
     if departure_code and departure_code not in airports:
         abort(404)
 
@@ -216,13 +266,12 @@ def flights(departure_code=None, destination_code=None):
 @app.route('/stations', methods=['GET'])
 def stations():
     gr = utils.get_graph(session, key='underground')
-    return jsonify(stations=gr.station_data.values())
+    return jsonify(stations=gr.get_current_nodes)
 
 
 @app.route('/lines', methods=['GET'])
 @app.route('/lines/<line>', methods=['GET'])
 def lines(line=None):
-    session.clear()
     gr = utils.get_graph(session, key='underground')
 
     data = []
@@ -234,64 +283,38 @@ def lines(line=None):
                 'target': edge[1],
                 'line': edge[2]['line']
             })
-    return jsonify(lines=data)
+    try:
+        data = jsonify(lines=data)
+    except:
+        abort(404)
+
+    return data
 
 
-@app.route('/forced_layout', methods=['GET'])
-def forced_layout():
-    session.clear()
-    gr = utils.get_graph(session, key='underground')
-    all_stations = gr.station_data
+@app.route('/forcedlayout/<network>', methods=['GET'])
+def forcedlayout(network=None):
+    if not network:
+        abort(404)
+    params = request.args.get('params')
+    if not params:
+        params = []
+    else:
+        params = urlparse.parse_qs(params)['params'][0].split(',')
 
-    data = []
-    stations = []
-    edges = gr.graph.edges(data=True)
-    for edge in edges:
-        try:
-            stations.append(all_stations[edge[0]])
-            stations.append(all_stations[edge[1]])
-        except:
-            continue
+    gr = utils.get_graph(session, key=network)
 
-        data.append({
-            'source': edge[0],
-            'target': edge[1],
-            'line': edge[2]['line']
-        })
-    stations = dict((v['name'], v) for v in stations).values()
-    id_stations = []
-    for i, e in enumerate(stations):
-        e['id'] = i
-        id_stations.append(e)
-    id_edges = []
-    for edge in edges:
-        station = filter(
-            lambda station: station['name'] == edge[1],
-            stations
-        )
-        if not station:
-            continue
-        dst = station[0]['id']
-        station = filter(
-            lambda station: station['name'] == edge[0],
-            stations
-        )
-        if not station:
-            continue
-        src = station[0]['id']
-        id_edges.append(
-            {'source': src, 'target': dst, 'data': edge[2]}
-        )
-    return jsonify(stations=id_stations, lines=id_edges)
+    edges, nodes = gr.d3_forced_layout(params)
+
+    return jsonify(nodes=nodes, edges=edges)
 
 
 @app.route('/degree/<plot_type>/<network>')
-def degree(plot_type=None, network='network'):
+def degree(plot_type=None, network=None):
     if not plot_type:
         abort(404)
     if plot_type not in ['scatter', 'powerlaw']:
         abort(404)
-    if network not in ['network', 'underground']:
+    if not network_test(network):
         abort(404)
 
     gr = utils.get_graph(session, key=network)
@@ -311,7 +334,8 @@ def degree(plot_type=None, network='network'):
         y = inter + (grad * np.log(x))
 
         data = [
-            {"x": datum[0], "y": datum[1]}
-            for datum in zip(x, np.exp(y))
+            {"x": datum[0], "y": np.exp(datum[1])}
+            for datum in zip(x, y)
+            if not np.isnan(np.exp(datum[1]))
         ]
         return jsonify(bestfit=data)

@@ -5,7 +5,7 @@ class BaseConfig(object):
 
 class DevelopmentConfig(BaseConfig):
     DEBUG = True
-    TESTING = True
+    TESTING = False
 
 
 class TestingConfig(BaseConfig):

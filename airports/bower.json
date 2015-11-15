@@ -19,6 +19,7 @@
     "vega-embed": "~1.0.9",
     "select2": "~4.0.0",
     "svg-pan-zoom": "~3.2.3",
-    "jquery-ui": "~1.11.4"
+    "jquery-ui": "~1.11.4",
+    "Materialize": "materialize#~0.97.2"
   }
 }
