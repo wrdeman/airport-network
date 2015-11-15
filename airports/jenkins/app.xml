@@ -9,16 +9,25 @@
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
-  <jdk>dum1</jdk>
   <triggers/>
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
       <command>export PYTHONPATH=/home/vagrant/app
 cd /home/vagrant/app
+
 /home/vagrant/venv/site/bin/python app/tests.py
 </command>
     </hudson.tasks.Shell>
+    <jenkins.plugins.shiningpanda.builders.VirtualenvBuilder plugin="shiningpanda@0.22">
+      <pythonName>System-CPython-2.7</pythonName>
+      <home></home>
+      <clear>false</clear>
+      <systemSitePackages>false</systemSitePackages>
+      <nature>shell</nature>
+      <command></command>
+      <ignoreExitCode>false</ignoreExitCode>
+    </jenkins.plugins.shiningpanda.builders.VirtualenvBuilder>
   </builders>
   <publishers/>
   <buildWrappers/>

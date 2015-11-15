@@ -18,3 +18,4 @@ airports/scripts/bower_components/
 target
 reports/
 trac/
+*.ipynb

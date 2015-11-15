@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Wrdeoftheday</title>
+    <meta name="description" content="">
+
+    <link href="{{url_for('static', filename='select2/dist/css/select2.min.css')}}" rel="stylesheet" type="text/css" />
+    <link href="{{url_for('static', filename='airports/airports.css')}}" rel="stylesheet" type="text/css" />
+    <link href="{{url_for('static', filename='Materialize/dist/css/materialize.min.css')}}" rel="stylesheet" type="text/css" />
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+
+    <script src="{{url_for('static', filename='jquery/dist/jquery.min.js')}}"></script>
+    <script src="{{url_for('static', filename='underscore/underscore.js')}}"></script>
+    <script src="{{url_for('static', filename='backbone/backbone.js')}}"></script>
+    <script src="{{url_for('static', filename='select2/dist/js/select2.min.js')}}"></script>
+
+    <script src="http://vega.github.io/vega-editor/vendor/topojson.js" charset="utf-8"></script>
+    <script src="{{url_for('static', filename='d3/d3.js')}}" charset="utf-8"></script>
+    <script src="http://vega.github.io/vega-editor/vendor/d3.geo.projection.min.js" charset="utf-8"></script>
+    <script src="http://vega.github.io/vega-editor/vendor/d3.layout.cloud.js" charset="utf-8"></script>
+    <script src="{{url_for('static', filename='vega/vega.js')}}" charset="utf-8"></script>
+    <script src="{{url_for('static', filename='vega-embed/vega-embed.js')}}" charset="utf-8"></script>
+
+    <script src="{{url_for('static', filename='Materialize/dist/js/materialize.min.js')}}" charset="utf-8"></script>
+
+    {% block extra_js %}{% endblock %}
+    <script type="text/javascript">
+      $(document).ready(function(){
+      {% block ready_js %}{% endblock %}
+      });
+    </script>
+  </head>
+  <body>
+    <nav class="light-blue lighten-1" role="navigation">
+      <div class="nav-wrapper container"><a id="logo-container" href="#" class="brand-logo">Wrdeoftheday</a>
+	<ul class="right hide-on-med-and-down">
+	  {% for item in nav.top %}
+	  <li class="{{ 'active' if item.is_active else '' }}">
+	    <a href="{{ item.url }}">{{ item.label }}</a>
+	  </li>
+	  {% endfor %}
+	</ul>
+	<ul id="nav-mobile" class="side-nav">
+	  {% for item in nav.top %}
+	  <li class="{{ 'active' if item.is_active else '' }}">
+	    <a href="{{ item.url }}">{{ item.label }}</a>
+	  </li>
+	  {% endfor %}
+      </ul>
+      <a href="#" data-activates="nav-mobile" class="button-collapse"><i class="material-icons">menu</i></a>
+      </div>
+    </nav>
+    {% block content %}{% endblock %}
+
+
+</body>
+</html>

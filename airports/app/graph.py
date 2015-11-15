@@ -139,6 +139,31 @@ class Random(BaseGraph):
         self.node_labels_to_ints()
 
 
+class Karate(BaseGraph):
+    def build_graph(self):
+        self.graph = nx.karate_club_graph()
+        self.node_labels_to_ints()
+
+    def modularity(self, comm):
+        for com in comm:
+            for i in com:
+                for j in self.graph.node:
+                    if i == j:
+                        self.graph.edge[i].keys()
+
+    def get_communities(self):
+        coms = nx.community.girvan_newman(self.graph)
+        mod = {}
+        for com in coms:
+            partition = {}
+            for i, part in enumerate(com):
+                for p in part:
+                    partition[p] = i
+
+            mod[modularity] = com
+            return mod
+
+
 class N_degree_partition(BaseGraph):
     prune = True
     p = 0.1
