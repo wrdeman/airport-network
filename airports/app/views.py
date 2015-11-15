@@ -13,7 +13,20 @@ from flask import (
 import networkx as nx
 import numpy as np
 
-from app import app, utils, vega
+from app import app, nav, utils, vega
+
+
+nav.Bar('top', [
+    nav.Item('Airports', 'index'),
+    nav.Item('Underground', 'london'),
+    nav.Item('Random', 'random')
+])
+
+
+def network_test(network):
+    if network in ['network', 'underground', 'random']:
+        return True
+    return False
 
 
 @app.route('/')
@@ -301,7 +314,7 @@ def degree(plot_type=None, network=None):
         abort(404)
     if plot_type not in ['scatter', 'powerlaw']:
         abort(404)
-    if not network:
+    if not network_test(network):
         abort(404)
 
     gr = utils.get_graph(session, key=network)

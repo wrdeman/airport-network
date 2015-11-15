@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block extra_js %}
+  <script src="{{url_for('static', filename='airports/airports.js')}}"></script>
+{% endblock %}
+
+  {% block ready_js %}
+     $( "ul.tabs" ).tabs();
+
+
+    var url_forced="{{url_for('forced', network='random')}}";
+
+    vg.embed('#vis1', url="{{url_for('histogram', network='random')}}", function(view, vega_spec) {
+      $(".vega-params").hide();
+      });
+
+    vg.embed('#vis2', url=url_forced, function(view, vega_spec) {
+      $(".vega-params").hide();
+    });
+
+{% endblock %}
+
+  {% block content %}
+  <div class="row">
+    <div class="col s12">
+      <ul class="tabs">
+	<li class="tab col s3"><a href="#vis2">Forced layout</a></li>
+	<li class="tab col s3"><a href="#vis1">Degree distribution</a></li>
+      </ul>
+    </div>
+    <div id="vis" class="col s12"></div>
+    <div id="vis2" class="col s12"></div>
+    <div id="vis1" class="col s12"></div>
+  </div>
+
+    <div class="container">
+    <div class="section">
+      <div class="row">
+
+	<div class="col s12 m4">
+	  <table id="tab_degree">
+	    <thead>
+	      <tr>
+		<th data-field="code">Code</th><th data-field="degree">Degree Centrality</th>
+	      </tr>
+	    </thead>
+	    <tbody>
+	      {% for code, deg in degrees.iteritems() %}
+	      <tr>
+		<td>{{code}}</td><td>{{deg}}</td>
+	      </tr>
+	      {% endfor %}
+	    </tbody>
+	  </table>
+	</div>
+
+	<div class="col s12 m4">
+	  <table id="tab_vulner">
+	    <thead>
+	      <tr>
+		<th data-field="code">Code</th><th data-field="degree">Vulnerability</th>
+	      </tr>
+	    </thead>
+	    <tbody>
+	      {% for code, deg in vulnerability.iteritems() %}
+	      <tr>
+		<td>{{code}}</td><td>{{deg}}</td>
+	      </tr>
+	      {% endfor %}
+	    </tbody>
+	  </table>
+	</div>
+
+      </div>
+    </div>
+  </div>
+
+
+{% endblock %}
