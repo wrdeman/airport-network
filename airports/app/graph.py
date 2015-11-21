@@ -10,6 +10,7 @@ from collections import OrderedDict
 from operator import itemgetter
 
 import networkx as nx
+import numpy as np
 from config import get_network_data as get
 
 
@@ -102,6 +103,64 @@ class BaseGraph(object):
             nodes.append(self.graph.node[edge_id])
         return edges, nodes
 
+    def communities(self):
+        communities = [[], []]
+        for i, s in enumerate(self.s):
+            if s == 1:
+                communities[0].append(i)
+            else:
+                communities[1].append(i)
+
+    def Q(self, s):
+        return (1./(4.*self.m))*np.dot(np.dot(np.transpose(s), self.B), s)
+
+    def _community(self):
+        self.n = len(list(self.g.nodes()))
+        self.m = len(list(self.g.edges()))
+
+        degs = np.array(dict(nx.degree(self.g)).values())
+        self.B = (nx.adjacency_matrix(self.g) - (
+            np.outer(degs, degs)/(2.*self.m))
+        )
+        self.s = np.zeros(self.n)
+
+        values, vectors = np.linalg.eig(self.B)
+        d = {i: val for i, val in enumerate(values)}
+        d = sorted(d.items(), key=itemgetter(1), reverse=True)
+        # apparently I need to transpose this?!
+        vectors = np.transpose(vectors)
+        if d[0][1] > 1e-8:
+            vector = np.array(vectors[d[0][0]]).reshape(-1,).tolist()
+            comm = self.communities_from_vector(vector)
+
+    def maximise_q(self):
+        q = self.Q(self.s)
+        mx = [-100, -1]
+        for i, s in enumerate(self.s):
+            s_new = np.copy(self.s)
+            s_new[i] *= -1
+            q_new = self.Q(s_new)
+            if q_new > mx[0]:
+                mx[0] = q_new
+                mx[1] = i
+
+        return mx[0] - q, mx[1]
+
+    def maximise(self):
+        mx = 100
+        count = 0
+        while True:
+            print self.Q(self.s)
+            mx_q, mx_index = self.maximise_q()
+            if mx_q < 0.00 or count > mx:
+                break
+            self.s[mx_index] *= -1
+            count += 1
+
+    def community(self):
+        self._community()
+        self.maximise()
+
 
 class Graph(BaseGraph):
     def build_graph(self):
@@ -143,25 +202,6 @@ class Karate(BaseGraph):
     def build_graph(self):
         self.graph = nx.karate_club_graph()
         self.node_labels_to_ints()
-
-    def modularity(self, comm):
-        for com in comm:
-            for i in com:
-                for j in self.graph.node:
-                    if i == j:
-                        self.graph.edge[i].keys()
-
-    def get_communities(self):
-        coms = nx.community.girvan_newman(self.graph)
-        mod = {}
-        for com in coms:
-            partition = {}
-            for i, part in enumerate(com):
-                for p in part:
-                    partition[p] = i
-
-            mod[modularity] = com
-            return mod
 
 
 class N_degree_partition(BaseGraph):
