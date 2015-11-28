@@ -97,11 +97,21 @@ class Graph(object):
                 com2.append(i)
         return com1, com2
 
-    def Q(self, s):
-        return (
+    def Q(self, s=None, B=None):
+        ret_max = False
+        if s is None:
+            s = self.s
+            ret_max = True
+        if not isinstance(B, np.ndarray):
+            B = self.B
+        q = (
             (1./(4.*self.m)) *
-            np.dot(np.dot(np.transpose(s), self.B), s)
+            np.dot(np.dot(s, B), s)
         )
+        if ret_max:
+            return q.max()
+        else:
+            return q
 
     def community(self):
         value, vector = sp.sparse.linalg.eigs(self.B, k=1, which='LR')
@@ -112,27 +122,31 @@ class Graph(object):
             return comm
 
     def maximise_q(self):
-        q = self.Q(self.s)
-        mx = [-100, -1]
-        for i, s in enumerate(self.s):
-            s_new = np.copy(self.s)
-            s_new[i] *= -1
-            q_new = self.Q(s_new)
-            if q_new > mx[0]:
-                mx[0] = q_new
-                mx[1] = i
-        return q, mx[0] - q, mx[1]
+        """ to maximise q change the sign of each element of S and see
+        if it results in a larger Q. Instead of iterating through each
+        element, define a matrix of S then multiply by matrix of ones
+        where the diagonal is -1. i.e. a matrix of S where each element
+        is changed. The calculate Q as matrix and get the diagonal which is
+        a vector of all the combinations
+        """
+        d = np.ones([self.n, self.n])
+        np.fill_diagonal(d, -1)
+        s_combo = self.s * d
+        q_combo = self.Q(s=s_combo).diagonal()
+        mx_i = q_combo.argmax()
+        q_mx = q_combo.max()
+        return q_mx, mx_i
 
     def maximise(self):
-        mx = 100
+        mx = 10
         count = 0
-        q_last, _, _ = self.maximise_q()
+        q_last = self.Q()
         while True:
-            q, mx_q, mx_i = self.maximise_q()
-            if mx_q < 0.00 or count > mx:
+            mx_q, mx_i = self.maximise_q()
+            if q_last - mx_q <= 0.00 or count > mx:
                 return q_last
             self.s[mx_i] *= -1
-            q_last = q
+            q_last = mx_q
             count += 1
         return q_last
 
@@ -173,29 +187,34 @@ def get_communities(level=0, g=None):
             break
         new_leaves = []
 
-        for leave in leaves:
-            b_sub, m_sub = graph.get_subB(leave['array'])
+        for leaf in leaves:
+            b_sub, m_sub = graph.get_subB(leaf['array'])
             try:
                 sub_graph = Graph(B=b_sub, m=m_sub)
                 sub_graph.community()
             except:
                 continue
 
-            if np.max(sub_graph.maximise()) > 0:
+            new_Q = sub_graph.maximise()
+            print new_Q
+            if new_Q > 0:
                 # reassign indices to the original graph
                 c1, c2 = sub_graph.communities()
                 ntree = Tree(
-                    left=[leave['array'][i] for i in c1],
-                    right=[leave['array'][i] for i in c2]
+                    left=[leaf['array'][i] for i in c1],
+                    right=[leaf['array'][i] for i in c2]
                 )
-                if leave['dir'] == 'l':
-                    leave['tree'].left = ntree
-                elif leave['dir'] == 'r':
-                    leave['tree'].right = ntree
+                if leaf['dir'] == 'l':
+                    leaf['tree'].left = ntree
+                elif leaf['dir'] == 'r':
+                    leaf['tree'].right = ntree
                     new_leaves.extend([
                         tree_struct(ntree, 'l', ntree.left),
                         tree_struct(ntree, 'r', ntree.right)
                     ])
-                leaves = new_leaves
-            count += 1
+            leaves = new_leaves
+        count += 1
     return Tree.get_tree_level(t, level)
+
+if __name__ == "__main__":
+    print get_communities(level=0)

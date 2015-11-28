@@ -5,6 +5,8 @@ python2:
       - python-dev
       - python
       - libzmq-dev
+      - libatlas-base-dev
+      - gfortran
 
 pip:
   pkg:
