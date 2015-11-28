@@ -16,7 +16,7 @@
       <command>export PYTHONPATH=/home/vagrant/app
 cd /home/vagrant/app
 
-/home/vagrant/venv/site/bin/python app/tests.py
+/home/vagrant/venv/site/bin/nosetests 
 </command>
     </hudson.tasks.Shell>
     <jenkins.plugins.shiningpanda.builders.VirtualenvBuilder plugin="shiningpanda@0.22">
