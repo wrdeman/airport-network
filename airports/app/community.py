@@ -144,20 +144,24 @@ class Graph(object):
             B = self.B
         q = (
             (1./(4.*self.m)) *
-            np.dot(np.dot(s, B), s)
+            np.inner(np.dot(s, B), s)
         )
         if ret_max:
             return q.max()
         else:
             return q
 
-    def community(self):
+    def community(self, vector=False):
         value, vector = sp.sparse.linalg.eigs(self.B, k=1, which='LR')
         if value > 0:
             vector = np.transpose(vector)
             vector = np.array(vector).reshape(-1,).tolist()
             comm = self._communities_from_vector(vector)
+            if vector:
+                return comm, vector
             return comm
+
+        return None
 
     def maximise_q(self):
         """ to maximise q change the sign of each element of S and see
@@ -176,12 +180,12 @@ class Graph(object):
         return q_mx, mx_i
 
     def maximise(self):
-        mx = 10
+        mx = 100
         count = 0
         q_last = self.Q()
         while True:
             mx_q, mx_i = self.maximise_q()
-            if mx_q - q_last <= 0.00 or count > mx:
+            if mx_q - q_last <= 1e-6 and mx_q > 1e-6 or count > mx:
                 return q_last
             self.s[mx_i] *= -1
             q_last = mx_q
@@ -198,58 +202,77 @@ class Graph(object):
         return sub_b - f_g, sub_m
 
 
-def get_communities(level=0, g=None):
-    def tree_struct(tree, direction, array):
-        return {
-            'tree': tree,
-            'dir': direction,
-            'array': array
-        }
+class Community(object):
+    def __init__(self, g=None):
+        self.g = g
+        if not g:
+            self.g = nx.karate_club_graph()
 
-    if not g:
-        g = nx.karate_club_graph()
-    graph = Graph(g=g)
-    graph.community()
-    # initial split
-    com1, com2 = graph.communities()
+    def get_tree(self, maximise=True):
+        def tree_struct(tree, direction, array):
+            return {
+                'tree': tree,
+                'dir': direction,
+                'array': array
+            }
 
-    t = Tree(left=com1, right=com2)
-    leaves = [
-        tree_struct(t, 'l', t.left),
-        tree_struct(t, 'r', t.right)
-    ]
+        graph = Graph(g=self.g)
+        _, original_vector = graph.community(vector=True)
+        # initial split
+        com1, com2 = graph.communities()
 
-    count = 0
-    while True:
-        if leaves == [] or count > 100:
-            break
-        new_leaves = []
+        t = Tree(left=com1, right=com2)
+        leaves = [
+            tree_struct(t, 'l', t.left),
+            tree_struct(t, 'r', t.right)
+        ]
 
-        for leaf in leaves:
-            b_sub, m_sub = graph.get_subB(leaf['array'])
-            try:
-                sub_graph = Graph(B=b_sub, m=m_sub)
-                sub_graph.community()
-            except:
-                continue
+        count = 0
+        while True:
+            if leaves == [] or count > 100:
+                break
+            new_leaves = []
 
-            new_Q = sub_graph.maximise()
-            print new_Q
-            if new_Q > 0:
-                # reassign indices to the original graph
-                c1, c2 = sub_graph.communities()
-                ntree = Tree(
-                    left=[leaf['array'][i] for i in c1],
-                    right=[leaf['array'][i] for i in c2]
-                )
-                if leaf['dir'] == 'l':
-                    leaf['tree'].left = ntree
-                elif leaf['dir'] == 'r':
-                    leaf['tree'].right = ntree
-                    new_leaves.extend([
-                        tree_struct(ntree, 'l', ntree.left),
-                        tree_struct(ntree, 'r', ntree.right)
-                    ])
-            leaves = new_leaves
-        count += 1
-    return Tree.get_tree_level(t, level)
+            for leaf in leaves:
+                b_sub, m_sub = graph.get_subB(leaf['array'])
+                try:
+                    sub_graph = Graph(B=b_sub, m=m_sub)
+                except:
+                    continue
+
+                try:
+                    if sub_graph.community() is None:
+                        continue
+                except:
+                    continue
+                if maximise:
+                    new_Q = sub_graph.maximise()
+                    print new_Q
+                else:
+                    new_Q = sub_graph.Q()
+                if new_Q > 0:
+                    # reassign indices to the original graph
+                    c1, c2 = sub_graph.communities()
+                    ntree = Tree(
+                        left=[leaf['array'][i] for i in c1],
+                        right=[leaf['array'][i] for i in c2]
+                    )
+                    if leaf['dir'] == 'l':
+                        leaf['tree'].left = ntree
+                    elif leaf['dir'] == 'r':
+                        leaf['tree'].right = ntree
+                        new_leaves.extend([
+                            tree_struct(ntree, 'l', ntree.left),
+                            tree_struct(ntree, 'r', ntree.right)
+                        ])
+                leaves = new_leaves
+            count += 1
+        self.tree = t
+        self.vector = original_vector
+
+    def get_communities(self, level=0, maximise=True):
+        self.get_tree(maximise=maximise)
+        return Tree.get_tree_level(self.tree, level), self.vector
+
+    def get_hierarchy(self, level=0, maximise=True):
+        return Tree.get_tree_level(self.tree, level), self.vector

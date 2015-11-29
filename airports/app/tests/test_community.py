@@ -1,7 +1,7 @@
 import unittest
 import networkx as nx
 import numpy as np
-from app.community import Graph, Tree, flatten
+from app.community import Graph, Tree, flatten, Community
 
 
 class QTestCase(unittest.TestCase):
@@ -167,3 +167,21 @@ class TestTree(unittest.TestCase):
                        [31, 32, 33, 34],
                        [41, 42, 43, 44]]
         self.assertListEqual(leaves, test_leaves)
+
+
+class TestKarate(unittest.TestCase):
+    def test_clubsize(self):
+        cm = Community()
+        clubs, _ = cm.get_communities(level=0)
+        test_graph = Graph(g=nx.karate_club_graph())
+        test_graph.community()
+        test_q = test_graph.maximise()
+
+        doc_g = nx.karate_club_graph()
+        doc = [0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 16, 17, 19, 21]
+        doc_s = [-1] * 34
+        for node in doc:
+            doc_s[node] *= -1
+        doc_graph = Graph(g=doc_g)
+        q_doc = doc_graph.Q(s=doc_s)
+        self.assertTrue(test_q > q_doc)
