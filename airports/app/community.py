@@ -3,6 +3,40 @@ import numpy as np
 import scipy as sp
 
 
+def flatten(L):
+    """ flatten a list of lists into a generator
+    usage list(flatten(list))
+    """
+    for item in L:
+        try:
+            for i in flatten(item):
+                yield i
+        except TypeError:
+            yield item
+
+
+def split(nodes, i):
+    """ split the list of lists of lists e.g:
+    [[[1,2], [3,4]], [5,6]] -> [[1,2], [3,4], [5,6]]
+    """
+    if isinstance(nodes, list):
+        new = []
+        for node in nodes:
+            if isinstance(node, list):
+                cnt = 0
+                while cnt < len(node):
+                    nd = node[cnt]
+                    if isinstance(nd, list):
+                        new.append(nd)
+                    else:
+                        new.append(node)
+                        cnt = len(node)
+                    cnt += 1
+        return new, i + 1
+    else:
+        return nodes, i + 1
+
+
 class Tree(object):
     """
     """
@@ -14,10 +48,21 @@ class Tree(object):
         self.left = Tree(left=a, right=b)
 
     def add_right(self, a, b):
-        self.left = Tree(left=a, right=b)
+        self.right = Tree(left=a, right=b)
 
     @classmethod
     def get_leaves(cls, tree):
+        """ get an list structure of the tree
+        consider
+            --|--
+          -|-    |
+         |   |  | |
+        | | | | 5 6
+        1 2 3 4
+
+          = [[1,2],[3,4]], [5,6]]
+
+        """
         nodes = []
         if tree:
             if isinstance(tree.left, Tree):
@@ -32,25 +77,18 @@ class Tree(object):
 
     @classmethod
     def get_tree_level(cls, tree, level=0):
-        def flatten(L):
-            for item in L:
-                try:
-                    for i in flatten(item):
-                        yield i
-                except TypeError:
-                    yield item
+        """ method to get the hierarchy.
+        consider
+            --|--
+          -|-    |
+         |   |  | |
+        | | | | 5 6
+        1 2 3 4
 
-        def split(nodes, i):
-            if isinstance(nodes, list):
-                return [
-                    nd for node in nodes
-                    if isinstance(node, list)
-                    for nd in node
-                ], i+1
-            else:
-                return [], i+1
+        get tree level 0  = [[1,2,3,4], [5,6]]
+        get tree level 1  = [1,2],[3,4], [5,6]
+        """
         nodes = cls.get_leaves(tree)
-
         count = 0
         while count < level:
             nodes, count = split(nodes, count)
@@ -143,7 +181,7 @@ class Graph(object):
         q_last = self.Q()
         while True:
             mx_q, mx_i = self.maximise_q()
-            if q_last - mx_q <= 0.00 or count > mx:
+            if mx_q - q_last <= 0.00 or count > mx:
                 return q_last
             self.s[mx_i] *= -1
             q_last = mx_q
@@ -215,6 +253,3 @@ def get_communities(level=0, g=None):
             leaves = new_leaves
         count += 1
     return Tree.get_tree_level(t, level)
-
-if __name__ == "__main__":
-    print get_communities(level=0)
