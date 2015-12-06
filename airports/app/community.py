@@ -151,13 +151,13 @@ class Graph(object):
         else:
             return q
 
-    def community(self, vector=False):
+    def community(self, return_vector=False):
         value, vector = sp.sparse.linalg.eigs(self.B, k=1, which='LR')
         if value > 0:
             vector = np.transpose(vector)
             vector = np.array(vector).reshape(-1,).tolist()
             comm = self._communities_from_vector(vector)
-            if vector:
+            if return_vector is True:
                 return comm, vector
             return comm
 
@@ -190,7 +190,6 @@ class Graph(object):
             self.s[mx_i] *= -1
             q_last = mx_q
             count += 1
-        return q_last
 
     def get_subB(self, indices):
         ''' get modularity matrix of a subgraph'''
@@ -217,7 +216,7 @@ class Community(object):
             }
 
         graph = Graph(g=self.g)
-        _, original_vector = graph.community(vector=True)
+        _, original_vector = graph.community(return_vector=True)
         # initial split
         com1, com2 = graph.communities()
 

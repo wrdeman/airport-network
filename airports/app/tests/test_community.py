@@ -58,6 +58,13 @@ class TestCommunity(unittest.TestCase):
         self.assertEqual(len(c1), len(c2))
         self.assertEqual(len(c1), size)
 
+        # if i want the vector result is len 2
+        result = comgraph.community(return_vector=False)
+        self.assertTrue(isinstance(result, list))
+
+        result = comgraph.community(return_vector=True)
+        self.assertTrue(isinstance(result, tuple))
+
     def test_community_maximise(self):
         # s is currently [1,1,1,-1,-1,-1]
         # change and maximise will get back to original state
@@ -171,8 +178,6 @@ class TestTree(unittest.TestCase):
 
 class TestKarate(unittest.TestCase):
     def test_clubsize(self):
-        cm = Community()
-        clubs, _ = cm.get_communities(level=0)
         test_graph = Graph(g=nx.karate_club_graph())
         test_graph.community()
         test_q = test_graph.maximise()

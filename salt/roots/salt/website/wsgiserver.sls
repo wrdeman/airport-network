@@ -28,6 +28,12 @@ gunicorn:
     - require:
       - pkg: python-pip
 
+gevent:
+  pip.installed:
+    - bin_env: {{ pillar ['website_venv_bin'] }}
+    - require:
+      - pkg: python-pip
+
 supervisored_gunicorn:
   supervisord:
     - running
