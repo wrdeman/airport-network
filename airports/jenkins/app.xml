@@ -1,6 +1,7 @@
-<?xml version="1.0" encoding="UTF-8"?><project>
+<?xml version='1.0' encoding='UTF-8'?>
+<project>
   <actions/>
-  <description/>
+  <description></description>
   <keepDependencies>false</keepDependencies>
   <properties/>
   <scm class="hudson.scm.NullSCM"/>
@@ -15,18 +16,10 @@
       <command>export PYTHONPATH=/home/vagrant/app
 cd /home/vagrant/app
 
+for f in $(find . -name &quot;test*.py&quot;); do chmod -x $f; done
 /home/vagrant/venv/site/bin/nosetests 
 </command>
     </hudson.tasks.Shell>
-    <jenkins.plugins.shiningpanda.builders.VirtualenvBuilder plugin="shiningpanda@0.22">
-      <pythonName>System-CPython-2.7</pythonName>
-      <home/>
-      <clear>false</clear>
-      <systemSitePackages>false</systemSitePackages>
-      <nature>shell</nature>
-      <command/>
-      <ignoreExitCode>false</ignoreExitCode>
-    </jenkins.plugins.shiningpanda.builders.VirtualenvBuilder>
   </builders>
   <publishers/>
   <buildWrappers/>
