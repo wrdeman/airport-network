@@ -1,7 +1,6 @@
-<?xml version='1.0' encoding='UTF-8'?>
-<project>
+<?xml version="1.0" encoding="UTF-8"?><project>
   <actions/>
-  <description></description>
+  <description/>
   <keepDependencies>false</keepDependencies>
   <properties/>
   <scm class="hudson.scm.NullSCM"/>
@@ -21,11 +20,11 @@ cd /home/vagrant/app
     </hudson.tasks.Shell>
     <jenkins.plugins.shiningpanda.builders.VirtualenvBuilder plugin="shiningpanda@0.22">
       <pythonName>System-CPython-2.7</pythonName>
-      <home></home>
+      <home/>
       <clear>false</clear>
       <systemSitePackages>false</systemSitePackages>
       <nature>shell</nature>
-      <command></command>
+      <command/>
       <ignoreExitCode>false</ignoreExitCode>
     </jenkins.plugins.shiningpanda.builders.VirtualenvBuilder>
   </builders>
